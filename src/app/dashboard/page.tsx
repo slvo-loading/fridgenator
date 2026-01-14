@@ -7,7 +7,7 @@ import { ChefHat, Trash2, Plus, Calendar } from 'lucide-react'
 import { FridgeItem, NewFridgeItem } from '../lib/types'
 
 export default function Dashboard() {
-  const { user, signOut, loading } = useAuth()
+  const { user, signOut, loading, isAdmin } = useAuth()
   const router = useRouter()
   const [items, setItems] = useState<FridgeItem[]>([])
   const [loadingItems, setLoadingItems] = useState(true)
@@ -25,7 +25,6 @@ export default function Dashboard() {
   }, [user, loading, router])
 
   useEffect(() => {
-    console.log('dashboard user:', user)
     if (user) {
       fetchItems()
     }
@@ -98,10 +97,6 @@ export default function Dashboard() {
     return { label: `${days}d left`, color: 'bg-green-100 text-green-800 border-green-300' }
   }
 
-  const navToAdmin = () => {
-    router.push('/admin')
-  }
-
   if (loading || loadingItems) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -120,12 +115,13 @@ export default function Dashboard() {
             <ChefHat className="w-8 h-8 text-indigo-600" />
             <h1 className="text-3xl font-bold text-gray-800">Fridgenator</h1>
           </div>
+          {isAdmin && 
           <button 
-          onClick={navToAdmin}
+          onClick={() => router.push('/admin')}
           className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             go to admin
-          </button>
+          </button>}
           <button
             onClick={signOut}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"

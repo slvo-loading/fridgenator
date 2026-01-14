@@ -1,12 +1,13 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react'
-import { createBrowserClient } from '@supabase/ssr' // ← Use browser client!
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
+import { supabase } from './supabaseClient'
 
 interface AuthContextType {
   user: User | null
+  isAdmin: boolean
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
   loading: boolean
@@ -14,6 +15,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  isAdmin: false,
   signInWithGoogle: async () => {},
   signOut: async () => {},
   loading: true,
@@ -27,22 +29,26 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null)
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-    // Add this to track mount/unmount
-    useEffect(() => {
-      console.log('🟢 AuthProvider MOUNTED')
-      return () => {
-        console.log('🔴 AuthProvider UNMOUNTED')
-      }
-    }, [])
 
-  // Create browser client for client components
-  const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const checkAdminStatus = async (userId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('admins')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle()
+          .throwOnError()
+  
+        return !!data
+      } catch (error) {
+        console.error('Error checking admin status:', error)
+        return false
+      }
+    }
 
   useEffect(() => {
 
@@ -50,6 +56,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         console.log('Auth state changed:', _event, session) // Debug
+
+        if (session?.user) {
+          const adminStatus = await checkAdminStatus(session.user.id)
+          setIsAdmin(adminStatus)
+        } else {
+          setIsAdmin(false)
+        }
+
         setUser(session?.user ?? null)
         setLoading(false)
       }
@@ -57,6 +71,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     return () => subscription.unsubscribe()
   }, [])
+
 
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -74,8 +89,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     router.push('/')
   }
 
+  useEffect(() => {
+    console.log('is admin', isAdmin)
+  }, [isAdmin])
+
   const value = {
     user,
+    isAdmin,
     signInWithGoogle,
     signOut,
     loading
