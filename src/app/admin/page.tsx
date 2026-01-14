@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { AlertCircle, CheckCircle2, Loader2, Upload } from 'lucide-react'
+import IngredientsModal from '../components/ingredientsModal'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '../lib/AuthContext'
-import { Upload, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useAuth } from '../auth/AuthContext'
 
 export default function Admin() {
   const router = useRouter()
   const { isAdmin } = useAuth()
+  const [modalOpen, setModalOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [processing, setProcessing] = useState(false)
   const [progress, setProgress] = useState({ current: 0, total: 0 })
@@ -43,7 +45,7 @@ export default function Admin() {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('/api/admin/upload-ingredients', {
+      const response = await fetch('/api/ingredients', {
         method: 'POST',
         body: formData
       })
@@ -95,9 +97,21 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
+      <IngredientsModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        isAdmin={isAdmin}
+        onSelectIngredient={(ingredient) => {
+          console.log('Selected:', ingredient)
+        }}
+      />
+
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin</h1>
         <button onClick={() => router.push('/dashboard')}>back to dashboard</button>
+        <button onClick={() => setModalOpen(true)}>
+        View Ingredients
+      </button>
 
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Upload Ingredients CSV</h2>

@@ -1,9 +1,9 @@
 'use client'
 
-import { useAuth } from '../lib/AuthContext'
+import { Calendar, ChefHat, Plus, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { ChefHat, Trash2, Plus, Calendar } from 'lucide-react'
+import { useAuth } from '../auth/AuthContext'
 import { FridgeItem, NewFridgeItem } from '../lib/types'
 
 export default function Dashboard() {

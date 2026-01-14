@@ -1,9 +1,9 @@
 'use client'
 
-import { useAuth } from './lib/AuthContext'
+import { ChefHat } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { ChefHat } from 'lucide-react'
+import { useAuth } from './auth/AuthContext'
 
 export default function LoginPage() {
   const { user, signInWithGoogle, loading } = useAuth()

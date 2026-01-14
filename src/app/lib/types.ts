@@ -8,9 +8,16 @@ export interface FridgeItem {
     created_at: string
   }
   
-  export type NewFridgeItem = {
-    name: string
-    amount: number
-    measurement: string
-    expiration_date: string
-  }
+export type NewFridgeItem = {
+  name: string
+  amount: number
+  measurement: string
+  expiration_date: string
+}
+
+export interface Ingredient {
+  id: string
+  ingredient: string
+  description: string | null
+  estimated_days_to_expire: number | null
+}
