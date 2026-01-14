@@ -1,4 +1,4 @@
-"use client";
+// "use client";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from './lib/AuthContext'
 import "./globals.css";

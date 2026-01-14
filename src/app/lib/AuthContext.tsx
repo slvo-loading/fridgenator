@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react'
 import { createBrowserClient } from '@supabase/ssr' // ← Use browser client!
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
@@ -30,22 +30,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
+    // Add this to track mount/unmount
+    useEffect(() => {
+      console.log('🟢 AuthProvider MOUNTED')
+      return () => {
+        console.log('🔴 AuthProvider UNMOUNTED')
+      }
+    }, [])
+
   // Create browser client for client components
   const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
 
   useEffect(() => {
-    // Get initial session
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      console.log('Initial session:', session) // Debug
-      setUser(session?.user ?? null)
-      setLoading(false)
-    }
-
-    getSession()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -53,9 +52,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log('Auth state changed:', _event, session) // Debug
         setUser(session?.user ?? null)
         setLoading(false)
-        
-        // Refresh the page to sync server/client
-        router.refresh()
       }
     )
 
