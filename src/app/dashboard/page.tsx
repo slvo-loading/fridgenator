@@ -97,7 +97,7 @@ export default function Dashboard() {
     return { label: `${days}d left`, color: 'bg-green-100 text-green-800 border-green-300' }
   }
 
-  if (loading || loadingItems) {
+  if (loadingItems) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-xl">Loading...</div>
