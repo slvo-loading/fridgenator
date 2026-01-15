@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '../../lib/supabaseServer'; 
+import Papa from "papaparse";
 
+interface IngredientRow {
+  ingredient: string
+  description: string
+  expire_pantry_days: string
+  expire_fridge_days: string
+  expire_freezer_days: string
+  // Add other properties as needed
+}
 
 // fetch all ingredients
 export async function GET(request: NextRequest) {
@@ -29,7 +38,6 @@ export async function POST(request: NextRequest) {
   console.log('starting embedding and saving process')
   
   const supabase = await createClient()
-  
   const encoder = new TextEncoder()
 
   const stream = new ReadableStream({
@@ -44,29 +52,51 @@ export async function POST(request: NextRequest) {
           return
         }
 
-        const text = await file.text()
-        const lines = text.split('\n').filter(line => line.trim())
-        
-        const dataLines = lines.slice(1)
+        const csvText = await file.text();
+        const result = Papa.parse<IngredientRow>(csvText, {
+          header: true,
+          skipEmptyLines: true,
+        });
         
         let successCount = 0
         let failedCount = 0
+        let progress = 0
         const errors: string[] = []
 
-        for (let i = 0; i < dataLines.length; i++) {
-          const line = dataLines[i]
-          const [ingredient, description] = line.split(',').map(s => s.trim())
+        for (const row of result.data) {
+          progress++
+
+          const ingredient = row.ingredient
+          const description = row.description
+          const pantryDays =
+            row.expire_pantry_days === "" ? null : Number(row.expire_pantry_days);
+        
+          const fridgeDays =
+            row.expire_fridge_days === "" ? null : Number(row.expire_fridge_days);
+        
+          const freezerDays =
+            row.expire_freezer_days === "" ? null : Number(row.expire_freezer_days);
 
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({
               type: 'progress',
-              current: i + 1,
-              total: dataLines.length
+              current: progress,
+              total: result.data.length
             })}\n\n`)
           )
 
+
           if (!ingredient) {
-            errors.push(`Row ${i + 2}: Missing ingredient name`)
+            errors.push(`Row ${progress + 1}: Missing ingredient name`)
+            failedCount++
+            progress++
+            continue
+          }
+
+          if ((pantryDays !== null && isNaN(pantryDays)) || 
+              (fridgeDays !== null && isNaN(fridgeDays)) || 
+              (freezerDays !== null && isNaN(freezerDays))) {
+            errors.push(`Row ${progress + 1} (${ingredient}): Invalid number in expiration days`)
             failedCount++
             continue
           }
@@ -80,6 +110,9 @@ export async function POST(request: NextRequest) {
               .insert({
                 ingredient,
                 description: description || null,
+                pantry_expire: pantryDays,
+                fridge_expire: fridgeDays,
+                freezer_expire: freezerDays,
                 embedding
               })
 
@@ -92,7 +125,7 @@ export async function POST(request: NextRequest) {
           } catch (err) {
             failedCount++
             console.error('Full error:', err)
-            errors.push(`Row ${i + 2} (${ingredient}): ${err instanceof Error ? err.message : 'Unknown error'}`)
+            errors.push(`Row ${progress + 1} (${ingredient}): ${err instanceof Error ? err.message : 'Unknown error'}`)
           }
         }
 
