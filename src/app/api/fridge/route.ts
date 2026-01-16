@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
   }
 
   const { data, error } = await supabase
-    .from('fridge_items')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('expiration_date', { ascending: true })
+  .from('fridge_items')
+  .select('*, item: ingredients(*)')
+  .eq('user_id', user.id)
+  .order('expiration_date', { ascending: true })
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
     try {
       console.log('reading request')
       const body = await request.json()
-      const { name, amount, measurement, expiration_date } = body
+      const { item, amount, measurement, expiration_date } = body
   
-      if (!name || !amount || !measurement || !expiration_date) {
+      if (!item || !amount || !measurement || !expiration_date) {
         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
       }
   
@@ -52,12 +52,12 @@ export async function POST(request: NextRequest) {
         .from('fridge_items')
         .insert([{
           user_id: user.id,
-          name,
+          ingredient_id: item.id,
           amount,
           measurement,
           expiration_date
         }])
-        .select()
+        .select('*, item: ingredients(*)')
         .single()
   
       if (error) {

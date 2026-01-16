@@ -1,7 +1,8 @@
 export interface FridgeItem {
     id: string
     user_id: string
-    name: string
+    ingredient_id: string
+    item: Ingredient
     amount: number
     measurement: string
     expiration_date: string
@@ -9,15 +10,18 @@ export interface FridgeItem {
   }
   
 export type NewFridgeItem = {
-  name: string
-  amount: number
-  measurement: string
-  expiration_date: string
+  item: Ingredient | null
+  amount: number | null
+  measurement: string | null
+  expiration_date: string | null
 }
 
 export interface Ingredient {
   id: string
   ingredient: string
   description: string | null
-  estimated_days_to_expire: number | null
+  embedding: number[]
+  pantry_expire: number | null
+  fridge_expire: number | null
+  freezer_expire: number | null
 }

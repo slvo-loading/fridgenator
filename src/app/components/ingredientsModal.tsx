@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Search, Trash2, Loader2 } from 'lucide-react'
 import { Ingredient } from '../lib/types'
+import { useIngredients } from '../lib/IngredientContext'
 
 interface IngredientsModalProps {
   isOpen: boolean
@@ -15,73 +16,9 @@ export default function IngredientsModal({
   isAdmin,
   onSelectIngredient 
 }: IngredientsModalProps) {
-  const [ingredients, setIngredients] = useState<Ingredient[]>([])
-  const [filteredIngredients, setFilteredIngredients] = useState<Ingredient[]>([])
+  const { ingredients, loadingIngredients, handleDelete, deleting } = useIngredients()
   const [searchQuery, setSearchQuery] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [deleting, setDeleting] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchIngredients()
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredIngredients(ingredients)
-    } else {
-      const query = searchQuery.toLowerCase()
-      setFilteredIngredients(
-        ingredients.filter(ing => 
-          ing.ingredient.toLowerCase().includes(query) ||
-          ing.description?.toLowerCase().includes(query)
-        )
-      )
-    }
-  }, [searchQuery, ingredients])
-
-  const fetchIngredients = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/ingredients')
-      const data = await response.json()
-      
-      if (data.error) {
-        console.error('Error fetching ingredients:', data.error)
-      } else {
-        setIngredients(data.items)
-        setFilteredIngredients(data.items)
-      }
-    } catch (error) {
-      console.error('Error fetching ingredients:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this ingredient?')) return
-
-    setDeleting(id)
-    try {
-      const response = await fetch(`/api/ingredients/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        setIngredients(prev => prev.filter(ing => ing.id !== id))
-      } else {
-        const data = await response.json()
-        alert(`Failed to delete: ${data.error}`)
-      }
-    } catch (error) {
-      console.error('Error deleting ingredient:', error)
-      alert('Failed to delete ingredient')
-    } finally {
-      setDeleting(null)
-    }
-  }
 
   if (!isOpen) return null
 
@@ -115,17 +52,25 @@ export default function IngredientsModal({
 
         {/* Ingredients List */}
         <div className="flex-1 overflow-y-auto p-4">
-          {loading ? (
+          {loadingIngredients ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
-          ) : filteredIngredients.length === 0 ? (
+          ) : ingredients.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               {searchQuery ? 'No ingredients found' : 'No ingredients yet'}
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredIngredients.map((ingredient) => (
+              {ingredients
+              .filter(ingredient => {
+                const query = searchQuery.toLowerCase()
+                return (
+                  ingredient.ingredient.toLowerCase().includes(query) ||
+                  ingredient.description?.toLowerCase().includes(query)
+                )
+              })
+              .map((ingredient) => (
                 <div
                   key={ingredient.id}
                   className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
@@ -140,9 +85,19 @@ export default function IngredientsModal({
                         {ingredient.description}
                       </p>
                     )}
-                    {ingredient.estimated_days_to_expire && (
+                    {ingredient.pantry_expire && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Expires in ~{ingredient.estimated_days_to_expire} days
+                        Expires in ~{ingredient.pantry_expire} days in the <b>pantry</b>
+                      </p>
+                    )}
+                    {ingredient.fridge_expire && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Expires in ~{ingredient.fridge_expire} days in the <b>fridge</b>
+                      </p>
+                    )}
+                    {ingredient.freezer_expire && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Expires in ~{ingredient.freezer_expire} days in the <b>freezer</b>
                       </p>
                     )}
                   </div>

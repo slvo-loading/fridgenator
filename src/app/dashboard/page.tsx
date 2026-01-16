@@ -4,19 +4,28 @@ import { Calendar, ChefHat, Plus, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { FridgeItem, NewFridgeItem } from '../lib/types'
+import { FridgeItem, NewFridgeItem, Ingredient } from '../lib/types'
+import { useIngredients } from '../lib/IngredientContext'
 
 export default function Dashboard() {
   const { user, signOut, loading, isAdmin } = useAuth()
+  const { ingredients, loadingIngredients } = useIngredients()
   const router = useRouter()
   const [items, setItems] = useState<FridgeItem[]>([])
   const [loadingItems, setLoadingItems] = useState(true)
+  const [isIngredientFocused, setIsIngredientFocused] = useState<boolean>(false)
   const [newItem, setNewItem] = useState<NewFridgeItem>({
-    name: '',
-    amount: 0,
-    measurement: '',
-    expiration_date: '',
+    item: null,
+    amount: null,
+    measurement: null,
+    expiration_date: null,
   })
+  const [storage, setStorage] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>('')
+
+  useEffect(() => {
+    console.log('newItem changed', newItem)
+  }, [newItem])
 
   useEffect(() => {
     if (!loading && !user) {
@@ -44,7 +53,7 @@ export default function Dashboard() {
 
   const addItem = async () => {
     console.log("adding an item")
-    if (!newItem.name || !newItem.amount || !newItem.measurement || !newItem.expiration_date) {
+    if (!newItem || !newItem.item || !newItem.amount || !newItem.measurement || !newItem.expiration_date) {
       alert('Please fill in all fields')
       return
     }
@@ -60,8 +69,20 @@ export default function Dashboard() {
       if (!response.ok) throw new Error('Failed to add item')
 
       const data = await response.json()
-      setItems([...items, data.item])
-      setNewItem({ name: '', amount: 0, measurement: '', expiration_date: '' })
+
+      const updatedItems = [...items, data.item].sort((a, b) => 
+        new Date(a.expiration_date).getTime() - new Date(b.expiration_date).getTime()
+      );
+      setItems(updatedItems)
+      
+      setNewItem({
+        item: null,
+        amount: null,
+        measurement: null,
+        expiration_date: null,
+      })
+
+      
     } catch (error) {
       console.error('Error adding item:', error)
       alert('Failed to add item')
@@ -105,6 +126,19 @@ export default function Dashboard() {
     )
   }
 
+  const setExpireDay = (storage: string, days_to_expire: number) => {
+    const today = new Date()
+
+    setStorage(storage)
+    const expirationDate = new Date(today)
+    expirationDate.setDate(today.getDate() + days_to_expire)
+    setNewItem(prev => ({ 
+      ...prev, 
+      expiration_date: expirationDate.toISOString().split('T')[0] // Format as YYYY-MM-DD
+    }))
+
+  }
+
   if (!user) return null
 
   return (
@@ -144,19 +178,70 @@ export default function Dashboard() {
                 type="text"
                 placeholder="Item name"
                 className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={newItem.name}
-                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsIngredientFocused(true)}
+                onBlur={() => {
+                  // Add a small delay to allow click events on dropdown items
+                  setTimeout(() => setIsIngredientFocused(false), 150)
+                }}
               />
+              {isIngredientFocused && searchQuery.trim() && (() => {
+                const filteredIngredients = ingredients.filter(ingredient => {
+                  const query = searchQuery.toLowerCase().trim()
+                  return (
+                    ingredient.ingredient.toLowerCase().includes(query)
+                  )
+                })
+
+                return filteredIngredients.length > 0 ? (
+                  <div className="absolute z-10 w-md mt-12 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filteredIngredients.map((ingredient) => (
+                      <div 
+                        key={ingredient.id}
+                        className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                        onClick={() => {
+                          setNewItem(prev => ({ ...prev, item: ingredient }))
+                          setSearchQuery(ingredient.ingredient)
+  
+                          if (ingredient.pantry_expire) {
+                            setExpireDay('pantry', ingredient.pantry_expire)
+                          } else if (ingredient.fridge_expire) {
+                            setExpireDay('fridge', ingredient.fridge_expire)
+                          } else if (ingredient.freezer_expire) {
+                            setExpireDay('freezer', ingredient.freezer_expire)
+                          }
+
+                          setIsIngredientFocused(false)
+                        }}
+                      >
+                        <h3 className="font-semibold text-gray-900">
+                          {ingredient.ingredient}
+                        </h3>
+                        {ingredient.description && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {ingredient.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3">
+                    <p className="text-sm text-gray-500">No ingredients found for "{searchQuery}"</p>
+                  </div>
+                )
+              })()}
               <input
                 type="number"
                 placeholder="Amount"
                 className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={newItem.amount || ''}
+                value={newItem?.amount || ''}
                 onChange={(e) => setNewItem({ ...newItem, amount: Number(e.target.value) })}
               />
               <select
                 className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={newItem.measurement}
+                value={newItem?.measurement || 1}
                 onChange={(e) => setNewItem({ ...newItem, measurement: e.target.value })}
               >
                 <option value="">Select unit</option>
@@ -174,9 +259,28 @@ export default function Dashboard() {
               <input
                 type="date"
                 className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={newItem.expiration_date}
+                value={newItem?.expiration_date || new Date().toISOString().split('T')[0]}
                 onChange={(e) => setNewItem({ ...newItem, expiration_date: e.target.value })}
               />
+              
+              {newItem.item?.pantry_expire &&
+              <button
+              onClick={() => setExpireDay('pantry', newItem.item?.pantry_expire || 0)}
+              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >Pantry</button>}
+
+              {newItem.item?.fridge_expire &&
+              <button
+              onClick={() => setExpireDay('fridge', newItem.item?.fridge_expire || 0)}
+              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >Fridge</button>}
+
+              {newItem.item?.freezer_expire &&
+              <button
+              onClick={() => setExpireDay('freezer', newItem.item?.freezer_expire || 0)}
+              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >Freezer</button>}
+
             </div>
             <button
               onClick={addItem}
@@ -193,6 +297,7 @@ export default function Dashboard() {
               <p className="text-center text-gray-500 py-8">No items in your fridge yet. Add some!</p>
             ) : (
               items.map((item) => {
+                console.log('items:', items)
                 const days = getDaysUntilExpiry(item.expiration_date)
                 const status = getExpiryStatus(days)
                 return (
@@ -201,7 +306,7 @@ export default function Dashboard() {
                     className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:shadow-md transition-shadow"
                   >
                     <div className="flex-1">
-                      <div className="font-medium text-gray-800 text-lg">{item.name}</div>
+                      <div className="font-medium text-gray-800 text-lg">{item.item.ingredient}</div>
                       <div className="text-sm text-gray-600">
                         {item.amount} {item.measurement}
                       </div>
