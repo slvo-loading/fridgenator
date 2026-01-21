@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { FridgeItem, NewFridgeItem, Ingredient } from '../lib/types'
 import { useIngredients } from '../lib/IngredientContext'
+import Select from 'react-select'
 
 export default function Dashboard() {
   const { user, signOut, loading, isAdmin } = useAuth()
@@ -13,7 +14,6 @@ export default function Dashboard() {
   const router = useRouter()
   const [items, setItems] = useState<FridgeItem[]>([])
   const [loadingItems, setLoadingItems] = useState(true)
-  const [isIngredientFocused, setIsIngredientFocused] = useState<boolean>(false)
   const [newItem, setNewItem] = useState<NewFridgeItem>({
     item: null,
     amount: null,
@@ -21,7 +21,12 @@ export default function Dashboard() {
     expiration_date: null,
   })
   const [storage, setStorage] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState<string>('')
+
+  const ingredientOptions = ingredients.map(ingredient => ({
+    value: ingredient.id,
+    label: ingredient.ingredient,
+    data: ingredient
+  }))
 
   useEffect(() => {
     console.log('newItem changed', newItem)
@@ -174,64 +179,40 @@ export default function Dashboard() {
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <h3 className="font-medium mb-3 text-gray-700">Add New Item</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-              <input
-                type="text"
-                placeholder="Item name"
-                className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setIsIngredientFocused(true)}
-                onBlur={() => {
-                  // Add a small delay to allow click events on dropdown items
-                  setTimeout(() => setIsIngredientFocused(false), 150)
+
+              <Select
+                options={ingredientOptions}
+                placeholder="Select an ingredient..."
+                isSearchable
+                value={newItem?.item ? { 
+                  value: newItem.item.id, 
+                  label: newItem.item.ingredient,
+                  data: newItem.item 
+                } : null}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    const ingredient = selectedOption.data
+                    setNewItem(prev => ({ ...prev, item: ingredient }))
+                    
+                    if (ingredient.pantry_expire) {
+                      setExpireDay('pantry', ingredient.pantry_expire)
+                    } else if (ingredient.fridge_expire) {
+                      setExpireDay('fridge', ingredient.fridge_expire)
+                    } else if (ingredient.freezer_expire) {
+                      setExpireDay('freezer', ingredient.freezer_expire)
+                    }
+
+                  }
+                }}
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderColor: '#d1d5db',
+                    '&:hover': { borderColor: '#6366f1' },
+                    '&:focus': { borderColor: '#6366f1', boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.2)' }
+                  })
                 }}
               />
-              {isIngredientFocused && searchQuery.trim() && (() => {
-                const filteredIngredients = ingredients.filter(ingredient => {
-                  const query = searchQuery.toLowerCase().trim()
-                  return (
-                    ingredient.ingredient.toLowerCase().includes(query)
-                  )
-                })
-
-                return filteredIngredients.length > 0 ? (
-                  <div className="absolute z-10 w-md mt-12 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {filteredIngredients.map((ingredient) => (
-                      <div 
-                        key={ingredient.id}
-                        className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-                        onClick={() => {
-                          setNewItem(prev => ({ ...prev, item: ingredient }))
-                          setSearchQuery(ingredient.ingredient)
-  
-                          if (ingredient.pantry_expire) {
-                            setExpireDay('pantry', ingredient.pantry_expire)
-                          } else if (ingredient.fridge_expire) {
-                            setExpireDay('fridge', ingredient.fridge_expire)
-                          } else if (ingredient.freezer_expire) {
-                            setExpireDay('freezer', ingredient.freezer_expire)
-                          }
-
-                          setIsIngredientFocused(false)
-                        }}
-                      >
-                        <h3 className="font-semibold text-gray-900">
-                          {ingredient.ingredient}
-                        </h3>
-                        {ingredient.description && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            {ingredient.description}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-                    <p className="text-sm text-gray-500">No ingredients found for "{searchQuery}"</p>
-                  </div>
-                )
-              })()}
               <input
                 type="number"
                 placeholder="Amount"
@@ -266,19 +247,31 @@ export default function Dashboard() {
               {newItem.item?.pantry_expire &&
               <button
               onClick={() => setExpireDay('pantry', newItem.item?.pantry_expire || 0)}
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                storage === 'pantry' 
+                  ? 'bg-indigo-600 text-white border-indigo-600 focus:ring-indigo-500' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-indigo-500'
+              }`}
               >Pantry</button>}
 
               {newItem.item?.fridge_expire &&
               <button
               onClick={() => setExpireDay('fridge', newItem.item?.fridge_expire || 0)}
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                storage === 'fridge' 
+                  ? 'bg-indigo-600 text-white border-indigo-600 focus:ring-indigo-500' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-indigo-500'
+              }`}
               >Fridge</button>}
 
               {newItem.item?.freezer_expire &&
               <button
               onClick={() => setExpireDay('freezer', newItem.item?.freezer_expire || 0)}
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                storage === 'freezer' 
+                  ? 'bg-indigo-600 text-white border-indigo-600 focus:ring-indigo-500' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-indigo-500'
+              }`}
               >Freezer</button>}
 
             </div>
