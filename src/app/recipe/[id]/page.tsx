@@ -18,6 +18,10 @@ export default function RecipeDetailPage() {
     fetchRecipe();
   }, []);
 
+  useEffect(() => {
+    console.log(recipe)
+  })
+
   const fetchRecipe = async () => {
     setLoading(true);
     try {
@@ -25,10 +29,7 @@ export default function RecipeDetailPage() {
       const data = await response.json();
       
       if (response.ok) {
-        setRecipe(data.recipe);
-        setIsSaved(data.recipe.is_saved);
-        // TODO: Check which ingredients user has in their fridge
-        // setUserHasIngredients(...)
+        setRecipe(data);
       }
     } catch (error) {
       console.error('Error fetching recipe:', error);
@@ -37,22 +38,51 @@ export default function RecipeDetailPage() {
     }
   };
 
-  const handleSaveRecipe = async () => {
+  async function saveRecipe(recipeId: string) {
     try {
-      const endpoint = isSaved ? '/api/recipes/unsave' : '/api/recipes/save';
-      const response = await fetch(endpoint, {
+      const response = await fetch(`/api/recipes/saved/${recipeId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipe_id: recipeId })
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
-
-      if (response.ok) {
-        setIsSaved(!isSaved);
+      
+      if (!response.ok) {
+        throw new Error('Failed to save recipe');
       }
+      
+      const data = await response.json();
+
+      setRecipe(prev => prev ? { ...prev, is_saved: data.is_saved } : prev);
+
+      console.log('Recipe saved:', data);
+      return data;
     } catch (error) {
       console.error('Error saving recipe:', error);
     }
-  };
+  }
+
+  // Unsave a recipe
+  async function unsaveRecipe(recipeId: string) {
+    try {
+      const response = await fetch(`/api/recipes/saved/${recipeId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to unsave recipe');
+      }
+      
+      const data = await response.json();
+      setRecipe(prev => prev ? { ...prev, is_saved: data.is_saved } : prev);
+
+
+      console.log('Recipe unsaved:', data);
+      return data;
+    } catch (error) {
+      console.error('Error unsaving recipe:', error);
+    }
+  }
 
   const startCookAlong = () => {
     window.location.href = `/cook-along/${recipeId}`;
@@ -179,17 +209,17 @@ export default function RecipeDetailPage() {
                 <Play size={20} />
                 Start Cook-Along Mode
               </button>
-              <button
-                onClick={handleSaveRecipe}
-                className={`px-6 py-3 border-2 font-semibold rounded-lg transition-colors flex items-center gap-2 ${
-                  isSaved
-                    ? 'border-orange-500 bg-orange-500 text-white hover:bg-orange-600'
-                    : 'border-orange-500 text-orange-500 hover:bg-orange-50'
-                }`}
-              >
-                {isSaved ? <BookmarkCheck size={20} /> : <BookmarkPlus size={20} />}
-                {isSaved ? 'Saved' : 'Save'}
-              </button>
+              {isSaved ? (
+                <button
+                onClick={() => unsaveRecipe(recipe.id)}
+                className='px-6 py-3 border-2 font-semibold rounded-lg transition-colors flex items-center gap-2 border-orange-500 bg-orange-500 text-white hover:bg-orange-600'
+                > <BookmarkCheck size={20} /> Saved</button>
+              ): (
+                <button
+                className='px-6 py-3 border-2 font-semibold rounded-lg transition-colors flex items-center gap-2 border-orange-500 text-orange-500 hover:bg-orange-50'
+                onClick={() => saveRecipe(recipe.id)}
+                > <BookmarkPlus size={20} /> Save</button>
+              )}
             </div>
 
             {/* Ingredients Section */}

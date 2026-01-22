@@ -22,70 +22,46 @@ export async function GET(
     // Fetch the recipe
     const { data: recipe, error: recipeError } = await supabase
       .from('recipes')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (recipeError) {
-      return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
-    }
-
-    // Check if user has access (their own recipe or public)
-    if (!recipe.is_public && recipe.user_id !== user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
-    // Fetch ingredients with ingredient details
-    const { data: recipeIngredients, error: ingredientsError } = await supabase
-      .from('recipe_ingredients')
       .select(`
         id,
-        quantity,
-        unit,
-        ingredients (
-          id,
-          ingredient,
-          category
-        )
-      `)
-      .eq('recipe_id', id);
+        name,
+        servings,
+        prep_time_mins,
+        cook_time_mins,
+        difficulty,
+        tags,
+        created_at,
+        user_id,
+        ingredients: recipe_ingredients(
+            ingredient: ingredients(
+                id,
+                ingredient,
+                description
+            ),
+            amount: quantity,
+            measurment: unit
+        ),
+        instructions: recipe_instructions(
+            id,
+            order,
+            action,
+            timer_duration,
+            timer_unit,
+            text
+        ).order('order')
+        is_saved: saved_recipes!left(id)
+        `)
+      .eq('id', id)
+      .eq('is_public', true)
+      .single();
 
-    if (ingredientsError) {
-      console.error('Ingredients fetch error:', ingredientsError);
-    }
-
-    // Fetch instructions
-    const { data: instructions, error: instructionsError } = await supabase
-      .from('recipe_instructions')
-      .select('*')
-      .eq('recipe_id', id)
-      .order('order', { ascending: true });
-
-    if (instructionsError) {
-      console.error('Instructions fetch error:', instructionsError);
-    }
-
-    // Check if user has saved this recipe
-    let isSaved = false;
-    if (user) {
-      const { data: savedData } = await supabase
-        .from('saved_recipes')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('recipe_id', id)
-        .single();
-      
-      isSaved = !!savedData;
-    }
-
-    return NextResponse.json({
-      recipe: {
-        ...recipe,
-        ingredients: recipeIngredients || [],
-        instructions: instructions || [],
-        is_saved: isSaved
+      if (recipeError) {
+        throw recipeError;
       }
-    });
+
+      console.log(recipe)
+
+    return NextResponse.json(recipe);
 
   } catch (error) {
     console.error('Error fetching recipe:', error);
