@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/lib/supabaseServer';
 
+//save a recipe
 export async function POST(
     request: NextRequest, 
     { params }: { params: Promise<{ id: string }> }

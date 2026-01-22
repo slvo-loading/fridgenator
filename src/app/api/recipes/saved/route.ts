@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
             measurment: unit
           )
         ),
-        saved_at
+        saved_at,
+        id
       `)
       .eq('user_id', user.id)
       .order('saved_at', { ascending: false });
@@ -47,7 +48,8 @@ export async function GET(request: NextRequest) {
     // Flatten the structure
     const recipes = savedRecipes?.map(item => ({
       ...item.recipes,
-      saved_at: item.saved_at
+      saved_at: item.saved_at,
+      is_saved: [{ id: item.id }]
     })) || [];
 
     console.log(recipes)

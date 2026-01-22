@@ -259,22 +259,22 @@ export default function RecipesBrowsePage() {
                         </div>
                       )}
                       {recipe.is_saved &&
-                      <div>
-                        {recipe.is_saved.length > 0 ? (
-                          <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            unsaveRecipe(recipe.id)}}
-                          ><Bookmark fill="currentColor" className="w-6 h-6" /></button>
-                        ) : (
-                          <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            saveRecipe(recipe.id)}}
-                          ><Bookmark className="w-6 h-6" /></button>
-                        )}
+                        <div>
+                          {recipe.is_saved.length > 0 ? (
+                            <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              unsaveRecipe(recipe.id)}}
+                            ><Bookmark fill="currentColor" className="text-orange-500" size={20}/></button>
+                          ) : (
+                            <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              saveRecipe(recipe.id)}}
+                            ><Bookmark className="text-orange-500" size={20}/></button>
+                          )}
                         </div>
-                        }
+                      }
                     </div>
 
                     {/* Tags */}
@@ -309,9 +309,6 @@ export default function RecipesBrowsePage() {
                         }`}>
                           {recipe.is_public ? 'Public' : 'Private'}
                         </span>
-                      )}
-                      {activeTab === 'saved' && (
-                        <BookmarkCheck className="text-orange-500" size={20} />
                       )}
                     </div>
                   </div>
