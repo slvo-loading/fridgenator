@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { useIngredients } from '../../lib/IngredientContext'
 import { useAuth } from '../../auth/AuthContext'
-import { RecipeIngredient, Ingredient } from '../../lib/types'
+import { RecipeIngredient, RecipeInstructions, Ingredient } from '../../lib/types'
 import { timerUnits, actions, measurementUnits, allTags} from '../../lib/cooking'
 import Select from 'react-select'
 
@@ -29,8 +29,8 @@ export default function RecipeUploadForm() {
     amount: 0,
     measurment: 'cups'
   }])
-  const [instructions, setInstructions] = useState([
-    { id: 1, order: 1, action: '', timer_duration: '', timer_unit: 'minutes', text: '' }
+  const [instructions, setInstructions] = useState<RecipeInstructions[]>([
+    { id: 1, order: 1, action: '', timer_duration: 30, timer_unit: 'minutes', text: '' }
   ]);
 
   const updateTime = (field: 'cook' | 'prep', value: number) => {
@@ -115,7 +115,7 @@ export default function RecipeUploadForm() {
       id: Date.now(), 
       order: newOrder, 
       action: '',
-      timer_duration: '',
+      timer_duration: 30,
       timer_unit: 'minutes',
       text: '' 
     }]);
@@ -195,7 +195,7 @@ export default function RecipeUploadForm() {
         .map(inst => ({
           order: inst.order,
           action: inst.action,
-          timer_duration: inst.timer_duration ? parseInt(inst.timer_duration) : null,
+          timer_duration: inst.timer_duration,
           timer_unit: inst.timer_unit,
           text: inst.text
         }));
