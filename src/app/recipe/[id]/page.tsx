@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { Clock, Users, ChefHat, BookmarkPlus, BookmarkCheck, ArrowLeft, Play } from 'lucide-react';
-import { Recipe } from '../../lib/types'
+import { Recipe } from '@/app/lib/types'
 import { useParams } from 'next/navigation';
 
 export default function RecipeDetailPage() {

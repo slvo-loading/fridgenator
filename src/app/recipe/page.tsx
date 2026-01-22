@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { Clock, Users, ChefHat, BookmarkPlus, BookmarkCheck, Search } from 'lucide-react';
+import { Clock, Users, ChefHat, BookmarkPlus, BookmarkCheck, Search, Bookmark } from 'lucide-react';
 import { Recipe } from '../lib/types'
 
 export default function RecipesBrowsePage() {
@@ -59,6 +59,65 @@ export default function RecipesBrowsePage() {
     const minutes = mins % 60;
     return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   };
+
+  // Save a recipe
+  async function saveRecipe(recipeId: string) {
+    try {
+      const response = await fetch(`/api/recipes/saved/${recipeId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save recipe');
+      }
+      
+      const data = await response.json();
+
+      setRecipes(prevRecipes => 
+        prevRecipes.map(recipe => 
+          recipe.id === recipeId 
+            ? { ...recipe, is_saved: data.is_saved }
+            : recipe
+        )
+      );
+
+      console.log('Recipe saved:', data);
+      return data;
+    } catch (error) {
+      console.error('Error saving recipe:', error);
+    }
+  }
+
+  // Unsave a recipe
+  async function unsaveRecipe(recipeId: string) {
+    try {
+      const response = await fetch(`/api/recipes/saved/${recipeId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to unsave recipe');
+      }
+      
+      const data = await response.json();
+
+      setRecipes(prevRecipes => 
+        prevRecipes.map(recipe => 
+          recipe.id === recipeId 
+            ? { ...recipe, is_saved: data.is_saved }
+            : recipe
+        )
+      );
+
+      console.log('Recipe unsaved:', data);
+      return data;
+    } catch (error) {
+      console.error('Error unsaving recipe:', error);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 p-6">
@@ -199,6 +258,23 @@ export default function RecipesBrowsePage() {
                           <span>{recipe.difficulty}</span>
                         </div>
                       )}
+                      {recipe.is_saved &&
+                      <div>
+                        {recipe.is_saved.length > 0 ? (
+                          <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            unsaveRecipe(recipe.id)}}
+                          ><Bookmark fill="currentColor" className="w-6 h-6" /></button>
+                        ) : (
+                          <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            saveRecipe(recipe.id)}}
+                          ><Bookmark className="w-6 h-6" /></button>
+                        )}
+                        </div>
+                        }
                     </div>
 
                     {/* Tags */}

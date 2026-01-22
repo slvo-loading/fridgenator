@@ -1,6 +1,6 @@
 // app/api/recipes/my-recipes/route.ts - Get user's own recipes
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '../../../lib/supabaseServer';
+import { createClient } from '@/app/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +22,17 @@ export async function GET(request: NextRequest) {
         difficulty,
         is_public,
         tags,
-        created_at
+        created_at,
+        ingredients: recipe_ingredients(
+            ingredient: ingredients(
+                id,
+                ingredient,
+                description
+            ),
+            amount: quantity,
+            measurment: unit
+        ),
+        is_saved: saved_recipes!left(id)
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
@@ -30,6 +40,8 @@ export async function GET(request: NextRequest) {
     if (error) {
       throw error;
     }
+
+    recipes.forEach(recipe => console.log(recipe.ingredients));
 
     return NextResponse.json({ recipes });
 

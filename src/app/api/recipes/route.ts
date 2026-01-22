@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '../../lib/supabaseServer'
+import { createClient } from '@/app/lib/supabaseServer'
 
 // fetch all recipes
 export async function GET(request: NextRequest) {
     try {
-      const supabase = await createClient();
+        const supabase = await createClient()
+      
+        const { data: { user } } = await supabase.auth.getUser()
+  
+        if (!user) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
   
       const { data: recipes, error } = await supabase
         .from('recipes')
@@ -17,14 +23,27 @@ export async function GET(request: NextRequest) {
           difficulty,
           tags,
           created_at,
-          user_id
+          user_id,
+          ingredients: recipe_ingredients(
+            ingredient: ingredients(
+                id,
+                ingredient,
+                description
+            ),
+            amount: quantity,
+            measurment: unit
+          ),
+          is_saved: saved_recipes!left(id)
         `)
         .eq('is_public', true)
+        .neq('user_id', user.id)
         .order('created_at', { ascending: false });
   
       if (error) {
         throw error;
       }
+
+      console.log(recipes)
   
       return NextResponse.json({ recipes });
   

@@ -1,6 +1,6 @@
 // app/api/recipes/saved/route.ts - Get user's saved recipes
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '../../../lib/supabaseServer';
+import { createClient } from '@/app/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,8 +15,7 @@ export async function GET(request: NextRequest) {
     const { data: savedRecipes, error } = await supabase
       .from('saved_recipes')
       .select(`
-        saved_at,
-        recipe:recipes (
+        recipes (
           id,
           name,
           servings,
@@ -25,8 +24,18 @@ export async function GET(request: NextRequest) {
           difficulty,
           tags,
           created_at,
-          user_id
-        )
+          user_id,
+          ingredients: recipe_ingredients (
+            ingredient: ingredients (
+              id,
+              ingredient,
+              description
+            ),
+            amount: quantity,
+            measurment: unit
+          )
+        ),
+        saved_at
       `)
       .eq('user_id', user.id)
       .order('saved_at', { ascending: false });
@@ -37,9 +46,11 @@ export async function GET(request: NextRequest) {
 
     // Flatten the structure
     const recipes = savedRecipes?.map(item => ({
-      ...item.recipe,
+      ...item.recipes,
       saved_at: item.saved_at
     })) || [];
+
+    console.log(recipes)
 
     return NextResponse.json({ recipes });
 

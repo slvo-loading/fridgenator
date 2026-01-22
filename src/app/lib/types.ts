@@ -21,7 +21,6 @@ export interface RecipeIngredient {
   measurment: string
 }
 
-
 export interface RecipeInstructions {
   id: number
   order: number
@@ -42,5 +41,6 @@ export interface Recipe {
   created_at: string;
   is_public: boolean;
   ingredients?: RecipeIngredient[];
-  instructions?: RecipeInstructions[]
+  instructions?: RecipeInstructions[];
+  is_saved?: [{id: number}],
 }

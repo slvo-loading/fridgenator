@@ -3,10 +3,10 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
-import { useIngredients } from '../../lib/IngredientContext'
-import { useAuth } from '../../auth/AuthContext'
-import { RecipeIngredient, RecipeInstructions, Ingredient } from '../../lib/types'
-import { timerUnits, actions, measurementUnits, allTags} from '../../lib/cooking'
+import { useIngredients } from '@/app/lib/IngredientContext'
+import { useAuth } from '@/app/auth/AuthContext'
+import { RecipeIngredient, RecipeInstructions, Ingredient } from '@/app/lib/types'
+import { timerUnits, actions, measurementUnits, allTags} from '@/app/lib/cooking'
 import Select from 'react-select'
 
 export default function RecipeUploadForm() {

@@ -1,20 +1,29 @@
 // app/api/recipes/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '../../../lib/supabaseServer';
+import { createClient } from '@/app/lib/supabaseServer';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    if (!user) {
+        return NextResponse.json(
+        { error: 'user_id is required' },
+        { status: 400 }
+        );
+    }
+
+    const { id } = await params
+
     // Fetch the recipe
     const { data: recipe, error: recipeError } = await supabase
       .from('recipes')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (recipeError) {
@@ -33,13 +42,13 @@ export async function GET(
         id,
         quantity,
         unit,
-        ingredient:ingredients (
+        ingredients (
           id,
           ingredient,
           category
         )
       `)
-      .eq('recipe_id', params.id);
+      .eq('recipe_id', id);
 
     if (ingredientsError) {
       console.error('Ingredients fetch error:', ingredientsError);
@@ -49,7 +58,7 @@ export async function GET(
     const { data: instructions, error: instructionsError } = await supabase
       .from('recipe_instructions')
       .select('*')
-      .eq('recipe_id', params.id)
+      .eq('recipe_id', id)
       .order('order', { ascending: true });
 
     if (instructionsError) {
@@ -63,7 +72,7 @@ export async function GET(
         .from('saved_recipes')
         .select('id')
         .eq('user_id', user.id)
-        .eq('recipe_id', params.id)
+        .eq('recipe_id', id)
         .single();
       
       isSaved = !!savedData;

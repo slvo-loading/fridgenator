@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '../../../lib/supabaseServer'
+import { createClient } from '@/app/lib/supabaseServer'
 
 // DELETE /api/fridge/[id] - Delete a specific fridge item
 export async function DELETE(
