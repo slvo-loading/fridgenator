@@ -4,7 +4,7 @@ import { Calendar, ChefHat, Plus, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { FridgeItem, NewFridgeItem, Ingredient } from '../lib/types'
+import { FridgeItem, Ingredient } from '../lib/types'
 import { useIngredients } from '../lib/IngredientContext'
 import Select from 'react-select'
 
@@ -14,7 +14,7 @@ export default function Dashboard() {
   const router = useRouter()
   const [items, setItems] = useState<FridgeItem[]>([])
   const [loadingItems, setLoadingItems] = useState(true)
-  const [newItem, setNewItem] = useState<NewFridgeItem>({
+  const [newItem, setNewItem] = useState<FridgeItem>({
     item: null,
     amount: null,
     measurement: null,
@@ -105,14 +105,20 @@ export default function Dashboard() {
     }
   }
 
-  const getDaysUntilExpiry = (expiryDate: string) => {
+  const getDaysUntilExpiry = (expiryDate: string | null) => {
+    if (!expiryDate){
+      return
+    }
     const today = new Date()
     const expiry = new Date(expiryDate)
     const diff = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     return diff
   }
 
-  const getExpiryStatus = (days: number) => {
+  const getExpiryStatus = (days: number | null) => {
+    if (!days) {
+      return
+    }
     if (days < 0) return { label: 'Expired', color: 'bg-red-100 text-red-800 border-red-300' }
     if (days <= 2) return { label: `${days}d left`, color: 'bg-orange-100 text-orange-800 border-orange-300' }
     if (days <= 5) return { label: `${days}d left`, color: 'bg-yellow-100 text-yellow-800 border-yellow-300' }
@@ -224,6 +230,7 @@ export default function Dashboard() {
               <input
                 type="number"
                 placeholder="Amount"
+                min={1}
                 className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 value={newItem?.amount || ''}
                 onChange={(e) => setNewItem({ ...newItem, amount: Number(e.target.value) })}
@@ -299,7 +306,7 @@ export default function Dashboard() {
             ) : (
               items.map((item) => {
                 console.log('items:', items)
-                const days = getDaysUntilExpiry(item.expiration_date)
+                const days = getDaysUntilExpiry(item.expiration_date) || null
                 const status = getExpiryStatus(days)
                 return (
                   <div
@@ -307,21 +314,23 @@ export default function Dashboard() {
                     className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:shadow-md transition-shadow"
                   >
                     <div className="flex-1">
-                      <div className="font-medium text-gray-800 text-lg">{item.item.ingredient}</div>
+                      <div className="font-medium text-gray-800 text-lg">{item.item?.ingredient}</div>
                       <div className="text-sm text-gray-600">
                         {item.amount} {item.measurement}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-xs px-3 py-1 rounded-full border font-medium ${status.color}`}>
-                        {status.label}
+                      <span className={`text-xs px-3 py-1 rounded-full border font-medium ${status?.color}`}>
+                        {status?.label}
                       </span>
+                      {item.id &&
                       <button
-                        onClick={() => deleteItem(item.id)}
+                        onClick={() => deleteItem(item.id ?? '')}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
+                      }
                     </div>
                   </div>
                 )

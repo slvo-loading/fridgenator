@@ -13,12 +13,14 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabase
   .from('fridge_items')
-  .select('*, item: ingredients(*)')
+  .select('id, amount, measurement, expiration_date, item: ingredients(id, ingredient, description)')
   .eq('user_id', user.id)
   .order('expiration_date', { ascending: true })
+  console.log(data)
+
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Fridge fetch error:', error);
   }
 
   return NextResponse.json({ items: data })
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
           measurement,
           expiration_date
         }])
-        .select('*, item: ingredients(*)')
+        .select('id, amount, measurement, expiration_date, item: ingredients(id, ingredient, description)')
         .single()
   
       if (error) {
