@@ -29,10 +29,6 @@ export default function Dashboard() {
   }))
 
   useEffect(() => {
-    console.log('newItem changed', newItem)
-  }, [newItem])
-
-  useEffect(() => {
     if (!loading && !user) {
       router.push('/')
     }
@@ -157,10 +153,22 @@ export default function Dashboard() {
           {isAdmin && 
           <button 
           onClick={() => router.push('/admin')}
-          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             go to admin
           </button>}
+          <button 
+          onClick={() => router.push('/recipe/form')}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            go to recipe form
+          </button>
+          <button 
+          onClick={() => router.push('/recipe')}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            go to recipe page
+          </button>
           <button
             onClick={signOut}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"

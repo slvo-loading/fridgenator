@@ -1,391 +1,249 @@
 'use client'
 
-import React, { useState } from 'react';
-import { Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
-import { useIngredients } from '../lib/IngredientContext'
-import { Ingredient } from '../lib/types'
+import React, { useState, useEffect } from 'react';
+import { Clock, Users, ChefHat, BookmarkPlus, BookmarkCheck, Search } from 'lucide-react';
+import { Recipe } from '../lib/types'
 
-export default function RecipeUploadForm() {
-  const { ingredients, loadingIngredients } = useIngredients()
-  const [recipeName, setRecipeName] = useState<string>('');
-  const [servings, setServings] = useState<number>(0);
-  const [prepTime, setPrepTime] = useState<number>(0);
-  const [cookTime, setCookTime] = useState<number>(0);
-  const [isPublic, setIsPublic] = useState(false);
-  const [tags, setTags] = useState('');
-  const [recipeIngredients, setRecipeIngredients] = useState<Ingredient[]>([])
-  const [instructions, setInstructions] = useState([
-    { id: 1, order: 1, action: '', timer_duration: '', timer_unit: 'minutes', text: '' }
-  ]);
+export default function RecipesBrowsePage() {
+  const [activeTab, setActiveTab] = useState('browse');
 
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const actions = [
-    'Mix', 'Stir', 'Whisk', 'Fold', 'Beat',
-    'Chop', 'Dice', 'Slice', 'Mince',
-    'Sauté', 'Fry', 'Boil', 'Simmer', 'Steam',
-    'Bake', 'Roast', 'Grill', 'Broil',
-    'Knead', 'Roll', 'Shape',
-    'Let rest', 'Chill', 'Freeze',
-    'Serve', 'Garnish', 'Plate'
-  ];
+  useEffect(() => {
+    fetchRecipes();
+  }, [activeTab]);
 
-  const timerUnits = ['seconds', 'minutes', 'hours'];
+  const fetchRecipes = async () => {
+    setLoading(true);
+    try {
+      let endpoint = '';
+      switch (activeTab) {
+        case 'browse':
+          endpoint = '/api/recipes';
+          break;
+        case 'my-recipes':
+          endpoint = '/api/recipes/my-recipes';
+          break;
+        case 'saved':
+          endpoint = '/api/recipes/saved';
+          break;
+      }
 
-  const addIngredient = () => {
-    const timestamp = Date.now();
-    const dateObject = new Date(timestamp);
-    const dateString = dateObject.toString()
-
-    setIngredients([...ingredients, { 
-      id: dateString, 
-      name: '', 
-      quantity: '', 
-      unit: '' 
-    }]);
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      setRecipes(data.recipes || []);
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+      setRecipes([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeIngredient = (id: string) => {
-    setIngredients(ingredients.filter(ing => ing.id !== id));
+  const handleRecipeClick = (recipeId: string) => {
+    // Navigate to recipe detail page
+    window.location.href = `/recipe/${recipeId}`;
   };
 
-  const updateIngredient = (id: string, field: string, value: string) => {
-    setIngredients(ingredients.map(ing => 
-      ing.id === id ? { ...ing, [field]: value } : ing
-    ));
-  };
+  const filteredRecipes = recipes.filter(recipe =>
+    recipe.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    recipe.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
-  const addInstruction = () => {
-    const newOrder = instructions.length + 1;
-    setInstructions([...instructions, { 
-      id: Date.now(), 
-      order: newOrder, 
-      action: '',
-      timer_duration: '',
-      timer_unit: 'minutes',
-      text: '' 
-    }]);
-  };
-
-  const removeInstruction = (id: number) => {
-    const filtered = instructions.filter(inst => inst.id !== id);
-    const reordered = filtered.map((inst, idx) => ({
-      ...inst,
-      order: idx + 1
-    }));
-    setInstructions(reordered);
-  };
-
-  const updateInstruction = (id: number, field: string, value: string) => {
-    setInstructions(instructions.map(inst => 
-      inst.id === id ? { ...inst, [field]: value } : inst
-    ));
-  };
-
-  const moveInstruction = (index: number, direction: string) => {
-    const newInstructions = [...instructions];
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    
-    if (newIndex < 0 || newIndex >= newInstructions.length) return;
-    
-    [newInstructions[index], newInstructions[newIndex]] = 
-    [newInstructions[newIndex], newInstructions[index]];
-    
-    const reordered = newInstructions.map((inst, idx) => ({
-      ...inst,
-      order: idx + 1
-    }));
-    
-    setInstructions(reordered);
-  };
-
-  const handleSubmit = () => {
-    const recipeData = {
-      name: recipeName,
-      servings: parseInt(servings) || null,
-      prep_time: prepTime,
-      cook_time: cookTime,
-      is_public: isPublic,
-      tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-      ingredients: ingredients.filter(ing => ing.name).map(ing => ({
-        name: ing.name,
-        quantity: ing.quantity,
-        unit: ing.unit
-      })),
-      instructions: instructions.filter(inst => inst.text).map(inst => ({
-        order: inst.order,
-        action: inst.action,
-        timer: inst.timer_duration ? {
-          duration: parseInt(inst.timer_duration),
-          unit: inst.timer_unit
-        } : null,
-        text: inst.text
-      }))
-    };
-    
-    console.log('Recipe to submit:', recipeData);
-    alert('Recipe submitted! Check console for data.');
+  const formatTime = (mins: number) => {
+    if (!mins) return 'N/A';
+    if (mins < 60) return `${mins} min`;
+    const hours = Math.floor(mins / 60);
+    const minutes = mins % 60;
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 p-6">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">Upload Recipe</h1>
-          
-          <div className="space-y-6">
-            {/* Basic Info */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Recipe Name
-              </label>
-              <input
-                type="text"
-                value={recipeName}
-                onChange={(e) => setRecipeName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                placeholder="e.g., Grandma's Chocolate Chip Cookies"
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Servings
-                </label>
-                <input
-                  type="number"
-                  value={servings}
-                  onChange={(e) => setServings(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="4"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Prep Time
-                </label>
-                <input
-                  type="text"
-                  value={prepTime}
-                  onChange={(e) => setPrepTime(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="15 min"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cook Time
-                </label>
-                <input
-                  type="text"
-                  value={cookTime}
-                  onChange={(e) => setCookTime(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="30 min"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tags (comma separated)
-              </label>
-              <input
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                placeholder="dessert, quick, family-friendly"
-              />
-            </div>
-
-            {/* Ingredients */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Ingredients
-                </label>
-                <button
-                  onClick={addIngredient}
-                  className="flex items-center gap-1 px-3 py-1 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm"
-                >
-                  <Plus size={16} />
-                  Add
-                </button>
-              </div>
-              
-              <div className="space-y-2">
-                {ingredients.map((ingredient) => (
-                  <div key={ingredient.id} className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      value={ingredient.name}
-                      onChange={(e) => updateIngredient(ingredient.id, 'name', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Ingredient name"
-                    />
-                    <input
-                      type="text"
-                      value={ingredient.quantity}
-                      onChange={(e) => updateIngredient(ingredient.id, 'quantity', e.target.value)}
-                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="2"
-                    />
-                    <input
-                      type="text"
-                      value={ingredient.unit}
-                      onChange={(e) => updateIngredient(ingredient.id, 'unit', e.target.value)}
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="cups"
-                    />
-                    <button
-                      onClick={() => removeIngredient(ingredient.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Instructions
-                </label>
-                <button
-                  onClick={addInstruction}
-                  className="flex items-center gap-1 px-3 py-1 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm"
-                >
-                  <Plus size={16} />
-                  Add Step
-                </button>
-              </div>
-              
-              <div className="space-y-3">
-                {instructions.map((instruction, index) => (
-                  <div key={instruction.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <div className="flex gap-2 items-start mb-3">
-                      <div className="flex flex-col gap-1 pt-1">
-                        <button
-                          onClick={() => moveInstruction(index, 'up')}
-                          disabled={index === 0}
-                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          <ChevronUp size={16} />
-                        </button>
-                        <button
-                          onClick={() => moveInstruction(index, 'down')}
-                          disabled={index === instructions.length - 1}
-                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          <ChevronDown size={16} />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-center w-8 h-8 bg-orange-500 text-white rounded-lg font-semibold text-sm">
-                        {instruction.order}
-                      </div>
-                      <button
-                        onClick={() => removeInstruction(instruction.id)}
-                        className="ml-auto p-2 text-red-500 hover:bg-red-100 rounded-lg"
-                      >
-                        <X size={18} />
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Action Type
-                        </label>
-                        <select
-                          value={instruction.action}
-                          onChange={(e) => updateInstruction(instruction.id, 'action', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
-                        >
-                          <option value="">Select an action...</option>
-                          {actions.map(action => (
-                            <option key={action} value={action.toLowerCase()}>
-                              {action}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Timer (optional)
-                          </label>
-                          <input
-                            type="number"
-                            value={instruction.timer_duration}
-                            onChange={(e) => updateInstruction(instruction.id, 'timer_duration', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="30"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Unit
-                          </label>
-                          <select
-                            value={instruction.timer_unit}
-                            onChange={(e) => updateInstruction(instruction.id, 'timer_unit', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
-                          >
-                            {timerUnits.map(unit => (
-                              <option key={unit} value={unit}>
-                                {unit}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Instructions
-                        </label>
-                        <textarea
-                          value={instruction.text}
-                          onChange={(e) => updateInstruction(instruction.id, 'text', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none bg-white"
-                          placeholder="Describe this step in detail..."
-                          rows={3}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Privacy */}
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-              <input
-                type="checkbox"
-                id="public"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
-              />
-              <label htmlFor="public" className="text-sm font-medium text-gray-700">
-                Make this recipe public (others can view and use it)
-              </label>
-            </div>
-
-            {/* Submit */}
-            <button
-              onClick={handleSubmit}
-              className="w-full py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
-            >
-              Publish Recipe
-            </button>
-          </div>
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Recipes</h1>
+          <p className="text-gray-600">Discover, create, and save your favorite recipes</p>
         </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('browse')}
+            className={`px-6 py-3 font-medium transition-colors relative ${
+              activeTab === 'browse'
+                ? 'text-orange-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            Browse Recipes
+            {activeTab === 'browse' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600"></div>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('my-recipes')}
+            className={`px-6 py-3 font-medium transition-colors relative ${
+              activeTab === 'my-recipes'
+                ? 'text-orange-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            My Recipes
+            {activeTab === 'my-recipes' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600"></div>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={`px-6 py-3 font-medium transition-colors relative ${
+              activeTab === 'saved'
+                ? 'text-orange-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            Saved Recipes
+            {activeTab === 'saved' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600"></div>
+            )}
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6 relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Search recipes by name or tags..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+            <p className="mt-4 text-gray-600">Loading recipes...</p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && filteredRecipes.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-2xl shadow-lg">
+            <ChefHat className="mx-auto mb-4 text-gray-400" size={64} />
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              {searchQuery ? 'No recipes found' : 'No recipes yet'}
+            </h3>
+            <p className="text-gray-500">
+              {activeTab === 'my-recipes' && !searchQuery && 'Create your first recipe to get started!'}
+              {activeTab === 'saved' && !searchQuery && 'Save recipes to find them here later'}
+              {activeTab === 'browse' && !searchQuery && 'Check back later for new recipes'}
+              {searchQuery && 'Try adjusting your search terms'}
+            </p>
+            {activeTab === 'my-recipes' && !searchQuery && (
+              <button
+                onClick={() => window.location.href = '/recipe/upload'}
+                className="mt-4 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                Create Recipe
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Recipe Grid */}
+        {!loading && filteredRecipes.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredRecipes.map((recipe) => {
+              const totalTime = (recipe.prep_time_mins || 0) + (recipe.cook_time_mins || 0);
+              
+              return (
+                <div
+                  key={recipe.id}
+                  onClick={() => handleRecipeClick(recipe.id)}
+                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow cursor-pointer group"
+                >
+                  {/* Recipe Image Placeholder */}
+                  <div className="h-48 bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center group-hover:from-orange-500 group-hover:to-amber-500 transition-colors">
+                    <ChefHat size={64} className="text-white opacity-50" />
+                  </div>
+
+                  {/* Recipe Info */}
+                  <div className="p-5">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-2">
+                      {recipe.name}
+                    </h3>
+
+                    {/* Meta Info */}
+                    <div className="flex gap-4 text-sm text-gray-600 mb-3">
+                      {recipe.servings && (
+                        <div className="flex items-center gap-1">
+                          <Users size={16} />
+                          <span>{recipe.servings}</span>
+                        </div>
+                      )}
+                      {totalTime > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Clock size={16} />
+                          <span>{formatTime(totalTime)}</span>
+                        </div>
+                      )}
+                      {recipe.difficulty && (
+                        <div className="flex items-center gap-1 capitalize">
+                          <ChefHat size={16} />
+                          <span>{recipe.difficulty}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tags */}
+                    {recipe.tags && recipe.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {recipe.tags.slice(0, 3).map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {recipe.tags.length > 3 && (
+                          <span className="px-2 py-1 text-gray-500 text-xs">
+                            +{recipe.tags.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <span className="text-xs text-gray-500">
+                        {new Date(recipe.created_at).toLocaleDateString()}
+                      </span>
+                      {activeTab === 'my-recipes' && recipe.is_public !== undefined && (
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          recipe.is_public 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {recipe.is_public ? 'Public' : 'Private'}
+                        </span>
+                      )}
+                      {activeTab === 'saved' && (
+                        <BookmarkCheck className="text-orange-500" size={20} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

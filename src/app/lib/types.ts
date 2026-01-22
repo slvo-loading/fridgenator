@@ -16,6 +16,12 @@ export type NewFridgeItem = {
   expiration_date: string | null
 }
 
+export interface RecipeIngredient {
+  ingredient: Ingredient | null,
+  amount: number,
+  measurment: string
+}
+
 export interface Ingredient {
   id: string
   ingredient: string
@@ -24,4 +30,16 @@ export interface Ingredient {
   pantry_expire: number | null
   fridge_expire: number | null
   freezer_expire: number | null
+}
+
+export interface Recipe {
+  id: string;
+  name: string;
+  tags: string[];
+  prep_time_mins?: number;
+  cook_time_mins?: number;
+  servings: number;
+  difficulty: string;
+  created_at: string;
+  is_public: boolean;
 }
