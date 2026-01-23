@@ -32,6 +32,7 @@ export interface RecipeInstructions {
 
 export interface Recipe {
   id: string;
+  user_id: string
   name: string;
   tags: string[];
   prep_time_mins: number;

@@ -36,7 +36,6 @@ export async function GET(request: NextRequest) {
           is_saved: saved_recipes!left(id)
         `)
         .eq('is_public', true)
-        .neq('user_id', user.id)
         .order('created_at', { ascending: false });
   
       if (error) {

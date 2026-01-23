@@ -5,25 +5,33 @@ import { useEffect, useState } from 'react'
 import { Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { useIngredients } from '@/app/lib/IngredientContext'
 import { useAuth } from '@/app/auth/AuthContext'
-import { RecipeIngredient, RecipeInstructions, Ingredient } from '@/app/lib/types'
+import { RecipeIngredient, RecipeInstructions, Ingredient, Recipe } from '@/app/lib/types'
 import { timerUnits, actions, measurementUnits, allTags} from '@/app/lib/cooking'
+import { useParams } from 'next/navigation';
 import Select from 'react-select'
 
 export default function RecipeUploadForm() {
   const router = useRouter()
+
+  const params = useParams();
+  const recipeId = params?.id as string | undefined;
+  const isEditMode = !!recipeId;
+  const [loadingRecipe, setLoadingRecipe] = useState(false);
+
   const { user, loading } = useAuth()
   const { ingredients, loadingIngredients } = useIngredients()
+
   const [recipeName, setRecipeName] = useState<string>('');
   const [servings, setServings] = useState<number>(0);
+  const [isPublic, setIsPublic] = useState<boolean>(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [openTags, setOpenTags] = useState<boolean>(false)
 
   const [prepTimeHrs, setPrepTimeHrs] = useState<number>(0);
   const [prepTimeMins, setPrepTimeMins] = useState<number>(0);
   const [cookTimeHrs, setCookTimeHrs] = useState<number>(0);
   const [cookTimeMins, setCookTimeMins] = useState<number>(0);
 
-  const [isPublic, setIsPublic] = useState<boolean>(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [openTags, setOpenTags] = useState<boolean>(false)
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([{
     ingredient: null,
     amount: 0,
@@ -32,6 +40,56 @@ export default function RecipeUploadForm() {
   const [instructions, setInstructions] = useState<RecipeInstructions[]>([
     { id: 1, order: 1, action: '', timer_duration: 30, timer_unit: 'minutes', text: '' }
   ]);
+
+  useEffect(() => {
+    if (isEditMode && recipeId) {
+      fetchRecipeForEdit(recipeId);
+    }
+  }, [isEditMode, recipeId]);
+
+  const fetchRecipeForEdit = async (id: string) => {
+    setLoadingRecipe(true);
+    try {
+      const response = await fetch(`/api/recipes/${id}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        console.log('response ok', data)
+        console.log('public?', data.is_public)
+        // Transform and populate form state
+        populateFormWithRecipeData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching recipe:', error);
+      alert('Failed to load recipe');
+      router.push('/recipe');
+    } finally {
+      setLoadingRecipe(false);
+    }
+  };
+
+  const populateFormWithRecipeData = (recipe: Recipe) => {
+    // Transform and set all state
+    setRecipeName(recipe.name);
+    setServings(recipe.servings);
+    console.log('public?', recipe.is_public)
+    setIsPublic(recipe.is_public)
+    
+    // Split time into hrs/mins
+    setPrepTimeHrs(Math.floor(recipe.prep_time_mins / 60));
+    setPrepTimeMins(recipe.prep_time_mins % 60);
+    setCookTimeHrs(Math.floor(recipe.cook_time_mins / 60));
+    setCookTimeMins(recipe.cook_time_mins % 60);
+    
+    setIsPublic(recipe.is_public);
+    setSelectedTags(recipe.tags || []);
+    
+    // Transform ingredients
+    setRecipeIngredients(recipe.ingredients || [])
+
+    // Transform instructions
+    setInstructions(recipe.instructions || [])
+  };
 
   const updateTime = (field: 'cook' | 'prep', value: number) => {
     const setters = {
@@ -213,13 +271,15 @@ export default function RecipeUploadForm() {
       };
   
       console.log('Submitting recipe:', recipeData);
+
+      const url = isEditMode ? `/api/recipes/${recipeId}` : '/api/recipes';
+      const method = isEditMode ? 'PUT' : 'POST';
+  
   
       // Submit to API
-      const response = await fetch('/api/recipes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(recipeData)
       });
   
@@ -240,6 +300,10 @@ export default function RecipeUploadForm() {
     }
   };
 
+  if (loadingRecipe) {
+    return <div>Loading recipe...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 p-6">
       <div className="max-w-3xl mx-auto">
@@ -250,8 +314,10 @@ export default function RecipeUploadForm() {
           >
             go to dashboard
           </button>
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">Upload Recipe</h1>
-          
+          <h1
+          className="text-3xl font-bold text-gray-800 mb-6"
+          >{isEditMode ? 'Edit Recipe' : 'Upload Recipe'}</h1>
+
           <div className="space-y-6">
             {/* Basic Info */}
             <div>

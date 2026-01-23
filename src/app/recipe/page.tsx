@@ -3,8 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Users, ChefHat, BookmarkPlus, BookmarkCheck, Search, Bookmark } from 'lucide-react';
 import { Recipe } from '../lib/types'
+import { useRouter } from 'next/navigation'
+
 
 export default function RecipesBrowsePage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState('browse');
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -14,6 +17,10 @@ export default function RecipesBrowsePage() {
   useEffect(() => {
     fetchRecipes();
   }, [activeTab]);
+
+  useEffect(() => {
+    console.log(recipes)
+  }, [recipes])
 
   const fetchRecipes = async () => {
     setLoading(true);
@@ -44,7 +51,7 @@ export default function RecipesBrowsePage() {
 
   const handleRecipeClick = (recipeId: string) => {
     // Navigate to recipe detail page
-    window.location.href = `/recipe/${recipeId}`;
+    router.push(`/recipe/${recipeId}`)
   };
 
   const filteredRecipes = recipes.filter(recipe =>
@@ -206,7 +213,7 @@ export default function RecipesBrowsePage() {
             </p>
             {activeTab === 'my-recipes' && !searchQuery && (
               <button
-                onClick={() => window.location.href = '/recipe/upload'}
+                onClick={() => router.push('/recipe/form')}
                 className="mt-4 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
               >
                 Create Recipe

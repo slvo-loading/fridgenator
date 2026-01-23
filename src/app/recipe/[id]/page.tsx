@@ -1,17 +1,21 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { Clock, Users, ChefHat, BookmarkPlus, BookmarkCheck, ArrowLeft, Play } from 'lucide-react';
+import { Clock, Users, ChefHat, BookmarkPlus, BookmarkCheck, ArrowLeft, Play, Trash2, Pencil } from 'lucide-react';
 import { Recipe } from '@/app/lib/types'
 import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/app/auth/AuthContext'
 
 export default function RecipeDetailPage() {
   // Get recipe ID from URL (in real app, use useParams from next/navigation)
+  const { user } = useAuth()
   const params = useParams();
   const recipeId = params.id;
+
+  const router = useRouter()
   
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSaved, setIsSaved] = useState(false);
   const [userHasIngredients, setUserHasIngredients] = useState([]);
 
   useEffect(() => {
@@ -85,11 +89,36 @@ export default function RecipeDetailPage() {
   }
 
   const startCookAlong = () => {
-    window.location.href = `/cook-along/${recipeId}`;
+    router.push(`cook-along/${recipe?.id}`)
   };
 
   const goBack = () => {
-    window.history.back();
+    router.back()
+  };
+
+  const deleteRecipe = async (recipeId: string) => {
+    if (!confirm('Are you sure you want to delete this recipe? This cannot be undone.')) {
+      return;
+    }
+  
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}`, {
+        method: 'DELETE'
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.error);
+      }
+  
+      alert('Recipe deleted successfully!');
+      router.push('/recipe')
+      
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+      alert('Failed to delete recipe');
+    }
   };
 
   if (loading) {
@@ -139,6 +168,24 @@ export default function RecipeDetailPage() {
           <ArrowLeft size={20} />
           <span>Back to recipes</span>
         </button>
+
+      {recipe.user_id === user.id &&
+        <div>
+          <button
+          className='text-gray-600 hover:text-gray-800'
+          onClick={() => deleteRecipe(recipe.id)}
+          >
+            <Trash2 size={20}/>
+          </button>
+
+          <button
+          className='text-gray-600 hover:text-gray-800'
+          onClick={() => router.push(`/recipe/form/${recipe.id}`)}
+          >
+            <Pencil size={20}/>
+          </button>
+        </div>
+      }
 
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Hero Image */}
@@ -209,7 +256,7 @@ export default function RecipeDetailPage() {
                 <Play size={20} />
                 Start Cook-Along Mode
               </button>
-              {isSaved ? (
+              {recipe.is_saved ? (
                 <button
                 onClick={() => unsaveRecipe(recipe.id)}
                 className='px-6 py-3 border-2 font-semibold rounded-lg transition-colors flex items-center gap-2 border-orange-500 bg-orange-500 text-white hover:bg-orange-600'
@@ -265,7 +312,7 @@ export default function RecipeDetailPage() {
                         </div>
                       )}
                       <p className="text-gray-800 leading-relaxed">{step.text}</p>
-                      {step.timer_duration && (
+                      {step.timer_duration > 0 && (
                         <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 bg-white px-3 py-2 rounded-md inline-flex">
                           <Clock size={16} className="text-orange-500" />
                           <span className="font-medium">
