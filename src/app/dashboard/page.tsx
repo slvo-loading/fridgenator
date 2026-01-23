@@ -164,7 +164,7 @@ export default function Dashboard() {
             go to admin
           </button>}
           <button 
-          onClick={() => router.push('/recipe/form')}
+          onClick={() => router.push('/recipe/form/new')}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             go to recipe form

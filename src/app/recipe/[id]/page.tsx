@@ -169,7 +169,7 @@ export default function RecipeDetailPage() {
           <span>Back to recipes</span>
         </button>
 
-      {recipe.user_id === user.id &&
+      {recipe.user_id === user?.id &&
         <div>
           <button
           className='text-gray-600 hover:text-gray-800'

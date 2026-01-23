@@ -15,7 +15,7 @@ export default function RecipeUploadForm() {
 
   const params = useParams();
   const recipeId = params?.id as string | undefined;
-  const isEditMode = !!recipeId;
+  const isEditMode = recipeId != 'new';
   const [loadingRecipe, setLoadingRecipe] = useState(false);
 
   const { user, loading } = useAuth()
