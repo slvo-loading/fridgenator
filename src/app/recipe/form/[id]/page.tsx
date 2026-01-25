@@ -6,41 +6,72 @@ import { Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { useIngredients } from '@/app/lib/IngredientContext'
 import { useAuth } from '@/app/auth/AuthContext'
 import { RecipeIngredient, RecipeInstructions, Ingredient, Recipe } from '@/app/lib/types'
-import { timerUnits, actions, measurementUnits, allTags} from '@/app/lib/cooking'
+import { timerUnits, actions, measurementUnits, allTags, fractionOptions} from '@/app/lib/cooking'
 import { useParams } from 'next/navigation';
 import Select from 'react-select'
+
 
 export default function RecipeUploadForm() {
   const router = useRouter()
 
   const params = useParams();
   const recipeId = params?.id as string | undefined;
-  const isEditMode = recipeId != 'new';
+  const isEditMode = recipeId !== 'new';
   const [loadingRecipe, setLoadingRecipe] = useState(false);
 
   const { user, loading } = useAuth()
   const { ingredients, loadingIngredients } = useIngredients()
 
   const [recipeName, setRecipeName] = useState<string>('');
-  const [servings, setServings] = useState<number>(0);
+  const [servings, setServings] = useState<string>('');
   const [isPublic, setIsPublic] = useState<boolean>(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [openTags, setOpenTags] = useState<boolean>(false)
 
-  const [prepTimeHrs, setPrepTimeHrs] = useState<number>(0);
-  const [prepTimeMins, setPrepTimeMins] = useState<number>(0);
-  const [cookTimeHrs, setCookTimeHrs] = useState<number>(0);
-  const [cookTimeMins, setCookTimeMins] = useState<number>(0);
+  const [prepTimeHrs, setPrepTimeHrs] = useState<string>('');
+  const [prepTimeMins, setPrepTimeMins] = useState<string>('');
+  const [cookTimeHrs, setCookTimeHrs] = useState<string>('');
+  const [cookTimeMins, setCookTimeMins] = useState<string>('');
 
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([{
     ingredient: null,
-    amount: 0,
-    measurment: 'cups'
+    amount: '',
+    measurment: ''
   }])
   const [instructions, setInstructions] = useState<RecipeInstructions[]>([
-    { id: 1, order: 1, action: '', timer_duration: 30, timer_unit: 'minutes', text: '' }
+    { id: 1, order: 1, action: '', timer_duration: '', timer_unit: '', text: '' }
   ]);
 
+
+  const ingredientOptions = ingredients.map(ingredient => ({
+    value: ingredient.id,
+    label: ingredient.ingredient,
+    data: ingredient
+  }))
+  const measurementOptions = measurementUnits.map(unit => ({
+    value: unit,
+    label: unit
+  }));
+  const actionOptions = actions.map(action => ({
+    value: action,
+    label: action
+  }));
+
+
+  useEffect(() => {
+    console.log(recipeIngredients)
+  }, [recipeIngredients])
+
+
+  // if no user, go back to dashboard
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
+
+
+  // decide whether to fetch recipes or not based on recipeID
   useEffect(() => {
     if (isEditMode && recipeId) {
       fetchRecipeForEdit(recipeId);
@@ -55,7 +86,6 @@ export default function RecipeUploadForm() {
       
       if (response.ok) {
         console.log('response ok', data)
-        console.log('public?', data.is_public)
         // Transform and populate form state
         populateFormWithRecipeData(data);
       }
@@ -71,149 +101,120 @@ export default function RecipeUploadForm() {
   const populateFormWithRecipeData = (recipe: Recipe) => {
     // Transform and set all state
     setRecipeName(recipe.name);
-    setServings(recipe.servings);
-    console.log('public?', recipe.is_public)
+    setServings(String(recipe.servings));
     setIsPublic(recipe.is_public)
     
     // Split time into hrs/mins
-    setPrepTimeHrs(Math.floor(recipe.prep_time_mins / 60));
-    setPrepTimeMins(recipe.prep_time_mins % 60);
-    setCookTimeHrs(Math.floor(recipe.cook_time_mins / 60));
-    setCookTimeMins(recipe.cook_time_mins % 60);
+    setPrepTimeHrs(String(Math.floor(recipe.prep_time_mins / 60)));
+    setPrepTimeMins(String(recipe.prep_time_mins % 60));
+    setCookTimeHrs(String(Math.floor(recipe.cook_time_mins / 60)));
+    setCookTimeMins(String(recipe.cook_time_mins % 60));
     
-    setIsPublic(recipe.is_public);
     setSelectedTags(recipe.tags || []);
-    
-    // Transform ingredients
     setRecipeIngredients(recipe.ingredients || [])
-
-    // Transform instructions
     setInstructions(recipe.instructions || [])
   };
 
-  const updateTime = (field: 'cook' | 'prep', value: number) => {
-    const setters = {
-      cook: { setMins: setCookTimeMins },
-      prep: { setMins: setPrepTimeMins }
-    };
-  
-    const { setMins } = setters[field];
-  
-    if (value >= 60) {
-      const remainingMins = value % 60;
-      setMins(remainingMins);
-    } else if (value < 0) {
-      setMins(59);
+
+  // meta data
+  const updateTime = (field: 'cook' | 'prep', value: string) => {
+    const setMins = field === 'cook' ? setCookTimeMins : setPrepTimeMins;
+    const numValue = parseNumber(value);
+    
+    if (numValue >= 60) {
+      setMins(String(numValue % 60));
+    } else if (numValue < 0) {
+      setMins('59');
     } else {
-      setMins(value)
+      setMins(value);
     }
   };
-
-  const ingredientOptions = ingredients.map(ingredient => ({
-    value: ingredient.id,
-    label: ingredient.ingredient,
-    data: ingredient
-  }))
-
-  const measurementOptions = measurementUnits.map(unit => ({
-    value: unit,
-    label: unit
-  }));
-
-  const actionOptions = actions.map(action => ({
-    value: action,
-    label: action
-  }));
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/')
-    }
-  }, [user, loading, router])
 
   const toggleTag = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter(t => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
+    setSelectedTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
   };
 
+
+// ingredients
   const addIngredient = () => {
     setRecipeIngredients([...recipeIngredients, { 
       ingredient: null, 
-      amount: 0, 
+      amount: '', 
       measurment: '' 
     }]);
   };
 
   const removeIngredient = (index: number) => {
-    setRecipeIngredients(recipeIngredients.filter((_, i) => i !== index));
+    setRecipeIngredients(prev => prev.filter((_, i) => i !== index));
   };
 
-  useEffect(() => {
-    console.log('updated ingredient', recipeIngredients)
-  }, [recipeIngredients])
-  
-
-  const updateIngredient = (index: number, field: string, value: number | string | Ingredient) => {
-
-    if (field === 'amount' && typeof value === 'number' && value < 0) {
-      value = 0
-    }
-
-    setRecipeIngredients(recipeIngredients.map((ing, i) => 
+  const updateIngredient = (index: number, field: string, value: string | Ingredient) => {
+    setRecipeIngredients(prev => prev.map((ing, i) => 
       i === index ? { ...ing, [field]: value } : ing
     ));
   };
 
+
+  const formatDecimalToFraction = (decimal: number): { whole: number; fraction: number } => {
+    const whole = Math.floor(decimal);
+    const fraction = decimal - whole;
+    return { whole, fraction };
+  };
+
+
+  // instructions
   const addInstruction = () => {
     const newOrder = instructions.length + 1;
     setInstructions([...instructions, { 
       id: Date.now(), 
       order: newOrder, 
       action: '',
-      timer_duration: 30,
+      timer_duration: '',
       timer_unit: 'minutes',
       text: '' 
     }]);
   };
 
   const removeInstruction = (id: number) => {
-    const filtered = instructions.filter(inst => inst.id !== id);
-    const reordered = filtered.map((inst, idx) => ({
-      ...inst,
-      order: idx + 1
-    }));
-    setInstructions(reordered);
+    setInstructions(prev => {
+      const filtered = prev.filter(inst => inst.id !== id);
+      return filtered.map((inst, idx) => ({ ...inst, order: idx + 1 }));
+    });
   };
 
-  const updateInstruction = (id: number, field: string, value: string | number) => {
-    if (field == 'timer_duration' && typeof value === 'number' && value < 0) {
-      value = 0
+  const updateInstruction = (id: number, field: string, value: string) => {
+    let finalValue = value;
+    if (field === 'timer_duration' && parseNumber(value) < 0) {
+      finalValue = '0';
     }
     
-    setInstructions(instructions.map(inst => 
-      inst.id === id ? { ...inst, [field]: value } : inst
+    setInstructions(prev => prev.map(inst => 
+      inst.id === id ? { ...inst, [field]: finalValue } : inst
     ));
   };
 
-  const moveInstruction = (index: number, direction: string) => {
-    const newInstructions = [...instructions];
+  const moveInstruction = (index: number, direction: 'up' | 'down') => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= instructions.length) return;
     
-    if (newIndex < 0 || newIndex >= newInstructions.length) return;
-    
-    [newInstructions[index], newInstructions[newIndex]] = 
-    [newInstructions[newIndex], newInstructions[index]];
-    
-    const reordered = newInstructions.map((inst, idx) => ({
-      ...inst,
-      order: idx + 1
-    }));
-    
-    setInstructions(reordered);
+    setInstructions(prev => {
+      const newInstructions = [...prev];
+      [newInstructions[index], newInstructions[newIndex]] = 
+        [newInstructions[newIndex], newInstructions[index]];
+      return newInstructions.map((inst, idx) => ({ ...inst, order: idx + 1 }));
+    });
   };
+
+
+  //helper
+  const parseNumber = (value: string | number): number => {
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
+  };
+
+
 
   const handleSubmit = async () => {
     try {
@@ -234,8 +235,8 @@ export default function RecipeUploadForm() {
       }
   
       // Convert time to total minutes
-      const prep_time_mins = (prepTimeHrs * 60) + prepTimeMins;
-      const cook_time_mins = (cookTimeHrs * 60) + cookTimeMins;
+      const prep_time_mins = parseNumber(prepTimeHrs) * 60 + parseNumber(prepTimeMins) || 0;
+      const cook_time_mins = parseNumber(cookTimeHrs) * 60 + parseNumber(cookTimeMins) || 0;
   
       // Format ingredients - include the name for embedding generation
       const formattedIngredients = recipeIngredients
@@ -243,7 +244,7 @@ export default function RecipeUploadForm() {
         .map(ing => ({
           ingredient_id: ing.ingredient!.id,
           ingredient_name: ing.ingredient!.ingredient, // Send the name too!
-          quantity: ing.amount,
+          quantity: parseNumber(ing.amount),
           unit: ing.measurment
         }));
   
@@ -253,14 +254,14 @@ export default function RecipeUploadForm() {
         .map(inst => ({
           order: inst.order,
           action: inst.action,
-          timer_duration: inst.timer_duration,
+          timer_duration: inst.timer_duration ? parseNumber(inst.timer_duration) : null,
           timer_unit: inst.timer_unit,
           text: inst.text
         }));
   
       const recipeData = {
         name: recipeName,
-        servings: servings || null,
+        servings: servings ? parseNumber(servings) : null,
         prep_time_mins,
         cook_time_mins,
         difficulty: 'easy',
@@ -292,7 +293,7 @@ export default function RecipeUploadForm() {
       alert('Recipe published successfully! 🎉');
       console.log('Recipe saved with ID:', result.recipe_id);
       
-      router.push('/dashboard');
+      router.push('/recipe');
       
     } catch (error) {
       console.error('Error saving recipe:', error);
@@ -340,30 +341,32 @@ export default function RecipeUploadForm() {
                 </label>
                 <input
                   type="number"
+                  min={1}
                   value={servings}
-                  onChange={(e) => setServings(Number(e.target.value))}
+                  onChange={(e) => setServings(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="4"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Prep Time
+                  Prep Time (hrs:mins)
                 </label>
                 <div className='w-full flex'>
                 <input
                   type="number"
+                  min='0'
                   value={prepTimeHrs}
-                  onChange={(e) => setPrepTimeHrs(Number(e.target.value))}
+                  onChange={(e) => setPrepTimeHrs(e.target.value)}
                   className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent mr-1"
-                  placeholder="15 min"
+                  placeholder="0"
                 />
                 <input
                   type="number"
                   value={prepTimeMins}
-                  onChange={(e) => updateTime('prep', Number(e.target.value))}
+                  onChange={(e) => updateTime('prep', e.target.value)}
                   className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="15 min"
+                  placeholder="15"
                 />
                 </div>
               </div>
@@ -374,17 +377,18 @@ export default function RecipeUploadForm() {
                 <div className='w-full flex'>
                 <input
                   type="number"
+                  min='0'
                   value={cookTimeHrs}
-                  onChange={(e) => setCookTimeHrs(Number(e.target.value))}
+                  onChange={(e) => setCookTimeHrs(e.target.value)}
                   className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent mr-1"
-                  placeholder="15 min"
+                  placeholder="15"
                 />
                 <input
                   type="number"
                   value={cookTimeMins}
-                  onChange={(e) => updateTime('cook', Number(e.target.value))}
+                  onChange={(e) => updateTime('cook', e.target.value)}
                   className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="15 min"
+                  placeholder="15"
                 />
                 </div>
               </div>
@@ -465,12 +469,47 @@ export default function RecipeUploadForm() {
 
                     <input
                       type="number"
-                      value={ingredient.amount}
-                      min={0}
-                      onChange={(e) => updateIngredient(i, 'amount', Number(e.target.value))}
+                      value={String(Math.floor(Number(ingredient.amount)))}
+                      min={1}
+                      onChange={(e) => {
+                        const whole = Number(e.target.value) || 0;
+                        const currentAmount = Number(ingredient.amount) || 0;
+                        const fractionPart = currentAmount - Math.floor(currentAmount);
+                        const newAmount = whole + fractionPart;
+                        updateIngredient(i, 'amount', String(newAmount));
+                      }}
                       className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent focus:text-gray"
                       placeholder="2"
                     />
+
+                    <Select
+                      value={fractionOptions.find(opt => {
+                        const currentAmount = Number(ingredient.amount) || 0;
+                        const fractionPart = currentAmount - Math.floor(currentAmount);
+                        return Math.abs(Number(opt.value) - fractionPart) < 0.01; // Close enough match
+                      })}
+                      onChange={(selected) => {
+                        if (selected) {
+                          const currentAmount = Number(ingredient.amount) || 0;
+                          const whole = Math.floor(currentAmount);
+                          const newAmount = whole + Number(selected.value);
+                          updateIngredient(i, 'amount', String(newAmount));
+                        }
+                      }}
+                      options={fractionOptions}
+                      className="w-32"
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          borderColor: '#d1d5db',
+                          borderRadius: '0.5rem',
+                          '&:hover': {
+                            borderColor: '#f97316'
+                          }
+                        })
+                      }}
+                    />
+
                     <Select
                       value={measurementOptions.find(opt => opt.value === ingredient.measurment)}
                       onChange={(selected) => {
@@ -583,9 +622,9 @@ export default function RecipeUploadForm() {
                           </label>
                           <input
                             type="number"
-                            value={instruction.timer_duration}
+                            value={instruction.timer_duration || ''}
                             min={0}
-                            onChange={(e) => updateInstruction(instruction.id, 'timer_duration', Number(e.target.value))}
+                            onChange={(e) => updateInstruction(instruction.id, 'timer_duration', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                             placeholder="30"
                           />

@@ -41,3 +41,13 @@ export const allTags = [
     'Healthy', 'Budget-Friendly', 'Spicy', 'Sweet', 'Savory', 'Soup', 'Salad', 'Pasta', 'Rice', 'Sandwich'
   ];
 
+
+export const fractionOptions = [
+    { value: '0', label: '-' },
+    { value: '0.125', label: '1/8' },
+    { value: '0.25', label: '1/4' },
+    { value: '0.33', label: '1/3' },
+    { value: '0.5', label: '1/2' },
+    { value: '0.67', label: '2/3' },
+    { value: '0.75', label: '3/4' }
+  ];

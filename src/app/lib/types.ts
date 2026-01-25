@@ -17,7 +17,7 @@ export interface Ingredient {
 
 export interface RecipeIngredient {
   ingredient: Ingredient | null,
-  amount: number,
+  amount: string,
   measurment: string
 }
 
@@ -25,7 +25,7 @@ export interface RecipeInstructions {
   id: number
   order: number
   action: string
-  timer_duration: number,
+  timer_duration: string,
   timer_unit: string,
   text: string
 }

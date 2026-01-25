@@ -121,6 +121,42 @@ export default function RecipeDetailPage() {
     }
   };
 
+
+  function formatAmount(amount: number): string {
+    if (!amount || amount === 0) return '';
+    
+    const whole = Math.floor(amount);
+    const decimal = amount - whole;
+    
+    // Map common decimals to fractions
+    const fractionMap: { [key: string]: string } = {
+      '0.125': '1/8',
+      '0.25': '1/4',
+      '0.33': '1/3',
+      '0.333': '1/3',
+      '0.5': '1/2',
+      '0.67': '2/3',
+      '0.667': '2/3',
+      '0.75': '3/4'
+    };
+    
+    // Round to 3 decimals to match our fraction map
+    const roundedDecimal = Math.round(decimal * 1000) / 1000;
+    const fractionStr = fractionMap[roundedDecimal.toFixed(3)] || fractionMap[roundedDecimal.toFixed(2)];
+    
+    // Build the display string
+    if (whole > 0 && fractionStr) {
+      return `${whole} ${fractionStr}`;
+    } else if (whole > 0) {
+      return `${whole}`;
+    } else if (fractionStr) {
+      return fractionStr;
+    }
+    
+    // Fallback to decimal if no match
+    return amount.toString();
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
@@ -282,7 +318,7 @@ export default function RecipeDetailPage() {
                       />
                       <div className="flex-1">
                         <span className="text-gray-800 font-medium">
-                          {item.amount} {item.measurment}
+                          {formatAmount(Number(item.amount))} {item.measurment}
                         </span>
                         <span className="text-gray-700 ml-2">
                           {item.ingredient?.ingredient}
@@ -312,7 +348,7 @@ export default function RecipeDetailPage() {
                         </div>
                       )}
                       <p className="text-gray-800 leading-relaxed">{step.text}</p>
-                      {step.timer_duration > 0 && (
+                      {Number(step.timer_duration) > 0 && (
                         <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 bg-white px-3 py-2 rounded-md inline-flex">
                           <Clock size={16} className="text-orange-500" />
                           <span className="font-medium">
