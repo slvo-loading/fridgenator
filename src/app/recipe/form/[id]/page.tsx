@@ -27,6 +27,7 @@ export default function RecipeUploadForm() {
   const [isPublic, setIsPublic] = useState<boolean>(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [openTags, setOpenTags] = useState<boolean>(false)
+  const [difficulty, setDifficulty] = useState<string>('easy')
 
   const [prepTimeHrs, setPrepTimeHrs] = useState<string>('');
   const [prepTimeMins, setPrepTimeMins] = useState<string>('');
@@ -264,7 +265,7 @@ export default function RecipeUploadForm() {
         servings: servings ? parseNumber(servings) : null,
         prep_time_mins,
         cook_time_mins,
-        difficulty: 'easy',
+        difficulty: difficulty,
         is_public: isPublic,
         tags: selectedTags,
         ingredients: formattedIngredients,
@@ -349,6 +350,26 @@ export default function RecipeUploadForm() {
                 />
               </div>
               <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Difficulty
+              </label>
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+              >
+                  <option value='easy'>
+                    easy
+                  </option>
+                  <option value='medium'>
+                    medium
+                  </option>
+                  <option value='hard'>
+                    hard
+                  </option>
+              </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Prep Time (hrs:mins)
                 </label>
@@ -372,7 +393,7 @@ export default function RecipeUploadForm() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cook Time
+                  Cook Time (hrs: min)
                 </label>
                 <div className='w-full flex'>
                 <input
