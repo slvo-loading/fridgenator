@@ -348,12 +348,15 @@ export default function RecipeDetailPage() {
                         </div>
                       )}
                       <p className="text-gray-800 leading-relaxed">{step.text}</p>
-                      {Number(step.timer_duration) > 0 && (
+                      {(Number(step.timer_hrs) > 0 || Number(step.timer_mins) > 0 || Number(step.timer_secs) > 0) && (
                         <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 bg-white px-3 py-2 rounded-md inline-flex">
                           <Clock size={16} className="text-orange-500" />
                           <span className="font-medium">
-                            Timer: {step.timer_duration} {step.timer_unit}
+                            Timer: 
                           </span>
+                          {step.timer_hrs && <span>{step.timer_hrs} : </span>}
+                          {step.timer_mins && <span>{step.timer_mins} : </span>}
+                          {step.timer_secs && <span>{step.timer_secs}</span>}
                         </div>
                       )}
                     </div>

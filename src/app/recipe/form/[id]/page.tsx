@@ -40,7 +40,7 @@ export default function RecipeUploadForm() {
     measurment: ''
   }])
   const [instructions, setInstructions] = useState<RecipeInstructions[]>([
-    { id: 1, order: 1, action: '', timer_duration: '', timer_unit: '', text: '' }
+    { id: 1, order: 1, action: '', timer_hrs: '', timer_mins: '', timer_secs: '', text: '' }
   ]);
 
 
@@ -158,13 +158,6 @@ export default function RecipeUploadForm() {
   };
 
 
-  const formatDecimalToFraction = (decimal: number): { whole: number; fraction: number } => {
-    const whole = Math.floor(decimal);
-    const fraction = decimal - whole;
-    return { whole, fraction };
-  };
-
-
   // instructions
   const addInstruction = () => {
     const newOrder = instructions.length + 1;
@@ -172,8 +165,9 @@ export default function RecipeUploadForm() {
       id: Date.now(), 
       order: newOrder, 
       action: '',
-      timer_duration: '',
-      timer_unit: 'minutes',
+      timer_hrs: '',
+      timer_mins: '',
+      timer_secs: '',
       text: '' 
     }]);
   };
@@ -187,13 +181,21 @@ export default function RecipeUploadForm() {
 
   const updateInstruction = (id: number, field: string, value: string) => {
     let finalValue = value;
-    if (field === 'timer_duration' && parseNumber(value) < 0) {
-      finalValue = '0';
+    
+    // Keep mins and secs under 60
+    if (field === 'timer_mins' || field === 'timer_secs') {
+      const num = parseNumber(value);
+      if (num >= 60 || num === 0) finalValue = '';
+      else if (num < 0) finalValue = '59';
+    } else if (field === 'timer_hrs' && parseNumber(value) <= 0) {
+      finalValue = '';
     }
     
-    setInstructions(prev => prev.map(inst => 
-      inst.id === id ? { ...inst, [field]: finalValue } : inst
-    ));
+    setInstructions(prev => 
+      prev.map(inst => 
+        inst.id === id ? { ...inst, [field]: finalValue } : inst
+      )
+    );
   };
 
   const moveInstruction = (index: number, direction: 'up' | 'down') => {
@@ -214,7 +216,6 @@ export default function RecipeUploadForm() {
     const num = Number(value);
     return isNaN(num) ? 0 : num;
   };
-
 
 
   const handleSubmit = async () => {
@@ -255,8 +256,9 @@ export default function RecipeUploadForm() {
         .map(inst => ({
           order: inst.order,
           action: inst.action,
-          timer_duration: inst.timer_duration ? parseNumber(inst.timer_duration) : null,
-          timer_unit: inst.timer_unit,
+          timer_hrs: inst.timer_hrs ? parseNumber(inst.timer_hrs) : null,
+          timer_mins: inst.timer_mins ? parseNumber(inst.timer_mins) : null,
+          timer_secs: inst.timer_secs ? parseNumber(inst.timer_secs) : null,
           text: inst.text
         }));
   
@@ -346,7 +348,7 @@ export default function RecipeUploadForm() {
                   value={servings}
                   onChange={(e) => setServings(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="4"
+                  placeholder="0"
                 />
               </div>
               <div>
@@ -377,17 +379,17 @@ export default function RecipeUploadForm() {
                 <input
                   type="number"
                   min='0'
-                  value={prepTimeHrs}
+                  value={parseNumber(prepTimeHrs) > 0 ? prepTimeHrs : ''}
                   onChange={(e) => setPrepTimeHrs(e.target.value)}
                   className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent mr-1"
                   placeholder="0"
                 />
                 <input
                   type="number"
-                  value={prepTimeMins}
+                  value={parseNumber(prepTimeMins) > 0 ? prepTimeMins : ''}
                   onChange={(e) => updateTime('prep', e.target.value)}
                   className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="15"
+                  placeholder="0"
                 />
                 </div>
               </div>
@@ -399,17 +401,17 @@ export default function RecipeUploadForm() {
                 <input
                   type="number"
                   min='0'
-                  value={cookTimeHrs}
+                  value={parseNumber(cookTimeHrs) > 0 ? cookTimeHrs : ''}
                   onChange={(e) => setCookTimeHrs(e.target.value)}
                   className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent mr-1"
-                  placeholder="15"
+                  placeholder="0"
                 />
                 <input
                   type="number"
-                  value={cookTimeMins}
+                  value={parseNumber(cookTimeMins) > 0 ? cookTimeMins : ''}
                   onChange={(e) => updateTime('cook', e.target.value)}
                   className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="15"
+                  placeholder="0"
                 />
                 </div>
               </div>
@@ -476,6 +478,7 @@ export default function RecipeUploadForm() {
                         if (selectedOption) {
                           const ingredient = selectedOption.data
                           updateIngredient(i, 'ingredient', ingredient)
+                          updateIngredient(i, 'amount', '1')
                         }
                       }}
                       styles={{
@@ -490,8 +493,7 @@ export default function RecipeUploadForm() {
 
                     <input
                       type="number"
-                      value={String(Math.floor(Number(ingredient.amount)))}
-                      min={1}
+                      value={Math.floor(Number(ingredient.amount)) > 0 ? String(Math.floor(Number(ingredient.amount))) : ''}
                       onChange={(e) => {
                         const whole = Number(e.target.value) || 0;
                         const currentAmount = Number(ingredient.amount) || 0;
@@ -500,7 +502,7 @@ export default function RecipeUploadForm() {
                         updateIngredient(i, 'amount', String(newAmount));
                       }}
                       className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent focus:text-gray"
-                      placeholder="2"
+                      placeholder="1"
                     />
 
                     <Select
@@ -568,13 +570,6 @@ export default function RecipeUploadForm() {
                 <label className="block text-sm font-medium text-gray-700">
                   Instructions
                 </label>
-                <button
-                  onClick={addInstruction}
-                  className="flex items-center gap-1 px-3 py-1 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm"
-                >
-                  <Plus size={16} />
-                  Add Step
-                </button>
               </div>
               
               <div className="space-y-3">
@@ -638,34 +633,34 @@ export default function RecipeUploadForm() {
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Timer (optional)
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Timer (hr: min: sec)
                           </label>
+                          <div className='w-full flex'>
                           <input
                             type="number"
-                            value={instruction.timer_duration || ''}
-                            min={0}
-                            onChange={(e) => updateInstruction(instruction.id, 'timer_duration', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="30"
+                            min='0'
+                            value={instruction.timer_hrs || ''}
+                            onChange={(e) => updateInstruction(instruction.id, 'timer_hrs', e.target.value)}
+                            className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent mr-1"
+                            placeholder="0"
+                          />
+                          <input
+                            type="number"
+                            value={instruction.timer_mins || ''}
+                            onChange={(e) => updateInstruction(instruction.id, 'timer_mins', e.target.value)}
+                            className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            placeholder="0"
+                          />
+                          <input
+                            type="number"
+                            value={instruction.timer_secs || ''}
+                            onChange={(e) => updateInstruction(instruction.id, 'timer_secs', e.target.value)}
+                            className="w-full flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            placeholder="0"
                           />
                         </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Unit
-                          </label>
-                          <select
-                            value={instruction.timer_unit}
-                            onChange={(e) => updateInstruction(instruction.id, 'timer_unit', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
-                          >
-                            {timerUnits.map(unit => (
-                              <option key={unit} value={unit}>
-                                {unit}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                      </div>
                       </div>
 
                       <div>
@@ -684,6 +679,14 @@ export default function RecipeUploadForm() {
                   </div>
                 ))}
               </div>
+
+              <button
+                  onClick={addInstruction}
+                  className="flex items-center gap-1 px-3 py-1 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm"
+                >
+                  <Plus size={16} />
+                  Add Step
+                </button>
             </div>
 
             {/* Privacy */}

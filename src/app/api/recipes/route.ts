@@ -151,8 +151,9 @@ export async function POST(request: NextRequest) {
         recipe_id: recipe.id,
         order: inst.order,
         action: inst.action,
-        timer_duration: inst.timer_duration,
-        timer_unit: inst.timer_unit,
+        timer_hrs: inst.timer_hrs,
+        timer_mins: inst.timer_mins,
+        timer_secs: inst.timer_secs,
         text: inst.text
       }));
   

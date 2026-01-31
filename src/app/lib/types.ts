@@ -25,8 +25,9 @@ export interface RecipeInstructions {
   id: number
   order: number
   action: string
-  timer_duration: string,
-  timer_unit: string,
+  timer_hrs: string,
+  timer_mins: string,
+  timer_secs: string,
   text: string
 }
 

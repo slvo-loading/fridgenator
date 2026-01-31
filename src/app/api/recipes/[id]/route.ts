@@ -47,8 +47,9 @@ export async function GET(
             id,
             order,
             action,
-            timer_duration,
-            timer_unit,
+            timer_hrs,
+            timer_mins,
+            timer_secs,
             text
         ).order('order'),
         `)
@@ -135,7 +136,7 @@ export async function PUT(
       is_public,
       tags,
       ingredients, // [{ ingredient_id, ingredient_name, quantity, unit }]
-      instructions // [{ order, action, timer_duration, timer_unit, text }]
+      instructions // [{ order, action, timer_hrs, timer_mins, timer_secs, text }]
     } = body;
 
     // Validate required fields
@@ -241,8 +242,9 @@ export async function PUT(
       recipe_id: id,
       order: inst.order,
       action: inst.action,
-      timer_duration: inst.timer_duration,
-      timer_unit: inst.timer_unit,
+      timer_hrs: inst.timer_hrs,
+      timer_mins: inst.timer_mins,
+      timer_secs: inst.timer_secs,
       text: inst.text
     }));
 
