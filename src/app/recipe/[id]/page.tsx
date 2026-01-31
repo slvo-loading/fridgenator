@@ -89,7 +89,7 @@ export default function RecipeDetailPage() {
   }
 
   const startCookAlong = () => {
-    router.push(`cook-along/${recipe?.id}`)
+    router.push(`/cook-along/${recipe?.id}`)
   };
 
   const goBack = () => {

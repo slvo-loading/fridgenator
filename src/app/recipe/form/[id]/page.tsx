@@ -6,7 +6,7 @@ import { Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { useIngredients } from '@/app/lib/IngredientContext'
 import { useAuth } from '@/app/auth/AuthContext'
 import { RecipeIngredient, RecipeInstructions, Ingredient, Recipe } from '@/app/lib/types'
-import { timerUnits, actions, measurementUnits, allTags, fractionOptions} from '@/app/lib/cooking'
+import { actions, measurementUnits, allTags, fractionOptions} from '@/app/lib/cooking'
 import { useParams } from 'next/navigation';
 import Select from 'react-select'
 

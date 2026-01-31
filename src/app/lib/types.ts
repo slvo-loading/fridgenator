@@ -42,7 +42,7 @@ export interface Recipe {
   difficulty: string;
   created_at: string;
   is_public: boolean;
-  ingredients?: RecipeIngredient[];
-  instructions?: RecipeInstructions[];
-  is_saved?: [{id: number}],
+  ingredients: RecipeIngredient[];
+  instructions: RecipeInstructions[];
+  is_saved: [{id: number}],
 }
