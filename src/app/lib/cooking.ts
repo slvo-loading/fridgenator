@@ -1,13 +1,13 @@
 
 export const measurementUnits = [
-    // Volume
-    'cups', 'tablespoons', 'teaspoons', 'fluid oz', 'ml', 'liters', 'pints', 'quarts', 'gallons',
-    // Weight
-    'oz', 'lbs', 'grams', 'kg', 'milligrams',
-    // Count
-    'whole', 'pieces', 'slices', 'cloves', 'pinch', 'dash', 'handful',
-    // Other
-    'to taste', 'as needed'
+  // Volume
+  'tsp', 'tbsp', 'cups', 'fl oz', 'pints', 'quarts',
+  // Weight
+  'oz', 'lbs', 'g', 'kg',
+  // Count
+  'whole', 'pieces', 'slices', 'cloves',
+  // Loose
+  'pinch', 'dash', 'to taste', 'as needed',
 ];
 
 export const actions = [

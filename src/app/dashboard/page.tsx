@@ -157,18 +157,20 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-gray-800">Fridgenator</h1>
           </div>
           {isAdmin && 
-          <button 
-          onClick={() => router.push('/admin')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            go to admin
-          </button>}
-          <button 
-          onClick={() => router.push('/recipe/form/new')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            go to recipe form
-          </button>
+            <div>
+              <button 
+              onClick={() => router.push('/admin')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                go to admin
+              </button>
+              <button 
+              onClick={() => router.push('/recipe/form/new')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                go to recipe form
+              </button>
+            </div>}
           <button 
           onClick={() => router.push('/recipe')}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

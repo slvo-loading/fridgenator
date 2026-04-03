@@ -292,7 +292,7 @@ export default function RecipeDetailPage() {
                 <Play size={20} />
                 Start Cook-Along Mode
               </button>
-              {recipe.is_saved ? (
+              {recipe.is_saved.length ? (
                 <button
                 onClick={() => unsaveRecipe(recipe.id)}
                 className='px-6 py-3 border-2 font-semibold rounded-lg transition-colors flex items-center gap-2 border-orange-500 bg-orange-500 text-white hover:bg-orange-600'

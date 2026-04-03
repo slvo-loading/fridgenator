@@ -10,7 +10,6 @@ import { actions, measurementUnits, allTags, fractionOptions} from '@/app/lib/co
 import { useParams } from 'next/navigation';
 import Select from 'react-select'
 
-
 export default function RecipeUploadForm() {
   const router = useRouter()
 
@@ -19,7 +18,7 @@ export default function RecipeUploadForm() {
   const isEditMode = recipeId !== 'new';
   const [loadingRecipe, setLoadingRecipe] = useState(false);
 
-  const { user, loading } = useAuth()
+  const { user, loading, isAdmin } = useAuth()
   const { ingredients, loadingIngredients } = useIngredients()
 
   const [recipeName, setRecipeName] = useState<string>('');
@@ -57,6 +56,12 @@ export default function RecipeUploadForm() {
     value: action,
     label: action
   }));
+
+  useEffect(() => {
+    if (!isAdmin) {
+        router.push('/dashboard')
+    }
+}, [])
 
 
   useEffect(() => {
