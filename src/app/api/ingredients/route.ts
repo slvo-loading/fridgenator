@@ -8,6 +8,8 @@ interface IngredientRow {
   expire_pantry_days: string
   expire_fridge_days: string
   expire_freezer_days: string
+  unit_family: 'volume' | 'weight' | 'count',
+  cups_per_lb: string
   // Add other properties as needed
 }
 
@@ -76,6 +78,9 @@ export async function POST(request: NextRequest) {
         
           const freezerDays =
             row.expire_freezer_days === "" ? null : Number(row.expire_freezer_days);
+          
+          const unitFamily = row.unit_family || 'count'
+          const cupsPerLb = row.cups_per_lb === '' || row.cups_per_lb == null ? null : Number(row.cups_per_lb)
 
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({
@@ -84,7 +89,6 @@ export async function POST(request: NextRequest) {
               total: result.data.length
             })}\n\n`)
           )
-
 
           if (!ingredient) {
             errors.push(`Row ${progress + 1}: Missing ingredient name`)
@@ -113,6 +117,8 @@ export async function POST(request: NextRequest) {
                 pantry_expire: pantryDays,
                 fridge_expire: fridgeDays,
                 freezer_expire: freezerDays,
+                unit_family: unitFamily,
+                cups_per_lb: cupsPerLb,
                 embedding
               })
 

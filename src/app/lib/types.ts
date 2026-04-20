@@ -1,8 +1,6 @@
 export interface FridgeItem {
     id?: string
     item: Ingredient | null
-    amount: number | null
-    measurement: string | null
     expiration_date: string | null
 }
 
@@ -13,6 +11,8 @@ export interface Ingredient {
   pantry_expire?: number
   fridge_expire?: number
   freezer_expire?: number
+  unit_family: 'volume' | 'weight' | 'count',
+  cups_per_lb: string
 }
 
 export interface RecipeIngredient {

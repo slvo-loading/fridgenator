@@ -150,7 +150,7 @@ export default function RecipesBrowsePage() {
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600"></div>
             )}
           </button>
-          {/* <button
+          <button
             onClick={() => setActiveTab('my-recipes')}
             className={`px-6 py-3 font-medium transition-colors relative ${
               activeTab === 'my-recipes'
@@ -162,7 +162,7 @@ export default function RecipesBrowsePage() {
             {activeTab === 'my-recipes' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600"></div>
             )}
-          </button> */}
+          </button>
           <button
             onClick={() => setActiveTab('saved')}
             className={`px-6 py-3 font-medium transition-colors relative ${

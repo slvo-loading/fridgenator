@@ -285,13 +285,13 @@ export default function RecipeDetailPage() {
 
             {/* Action Buttons */}
             <div className="flex gap-4 mb-8">
-              <button
+              {/* <button
                 onClick={startCookAlong}
                 className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
               >
                 <Play size={20} />
                 Start Cook-Along Mode
-              </button>
+              </button> */}
               {recipe.is_saved.length ? (
                 <button
                 onClick={() => unsaveRecipe(recipe.id)}
